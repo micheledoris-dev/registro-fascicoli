@@ -9,112 +9,91 @@
     <style>
         :root { --bg: #0b0b0b; --card-bg: #161616; --accent: #e8c97a; --text-main: #f0ece0; --text-dim: #a09880; --border: #262626; --red: #e05555; --green: #5aad7a; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-main); display: flex; min-height: 100vh; }
-        
-        .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 24px; position: fixed; height: 100vh; z-index: 100; transition: 0.3s; }
-        .main { flex: 1; margin-left: 260px; padding: 20px; width: calc(100% - 260px); }
-
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); width: 0; padding: 0; }
-            .main { margin-left: 0; width: 100%; padding: 10px; }
-            .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
-            thead { display: none; }
-            tr { display: block; background: var(--card-bg); margin-bottom: 15px; border-radius: 12px; border: 1px solid var(--border); padding: 15px; }
-            td { display: block; padding: 5px 0 !important; border: none !important; }
-            td:before { content: attr(data-label); font-size: 10px; color: var(--text-dim); display: block; text-transform: uppercase; }
-        }
-
-        .nav-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); margin-bottom: 8px; }
-        .nav-item.active { background: rgba(232,201,122,0.1); color: var(--accent); }
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 20px; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; }
+        .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 24px; position: fixed; height: 100vh; z-index: 100; }
+        .main { margin-left: 260px; padding: 20px; width: calc(100% - 260px); }
+        @media (max-width: 900px) { .sidebar { display: none; } .main { margin-left: 0; width: 100%; padding: 15px; } .stats-grid { grid-template-columns: 1fr 1fr !important; } }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
         .stat-card { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border); border-left: 4px solid var(--accent); }
-        .content-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; }
-        
-        input { background: #0b0b0b; border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; width: 100%; outline: none; margin-bottom: 10px; }
+        .stat-val { font-size: 24px; font-weight: 700; color: white; }
+        .content-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 15px; margin-bottom: 20px; }
+        input { background: #0b0b0b; border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; width: 100%; margin-bottom: 8px; font-size: 16px; }
         .btn-add { background: var(--accent); color: black; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; }
-        
-        .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; }
-        .badge-fuori { background: rgba(224,85,85,0.2); color: #ff6b6b; border: 1px solid var(--red); }
-        .badge-sede { background: rgba(90,173,122,0.1); color: var(--green); }
-
-        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index:999; }
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 12px; font-size: 11px; color: var(--text-dim); border-bottom: 1px solid var(--border); }
-        td { padding: 12px; font-size: 13px; border-bottom: 1px solid #222; }
-        #print-area { display: none; text-align: center; padding: 50px; background: white; color: black; }
+        td, th { padding: 12px; text-align: left; border-bottom: 1px solid #222; }
+        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); display:none; justify-content:center; align-items:center; z-index:999; flex-direction: column; }
     </style>
 </head>
 <body>
     <div id="loading-overlay">⌛ Caricamento Cloud...</div>
 
     <div class="sidebar">
-        <div style="font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 40px; border-left: 3px solid var(--accent); padding-left: 15px;">ARCHIVIO PRO<br><span style="font-size: 10px; opacity: 0.6;">CLOUD SYNC</span></div>
-        <div class="nav-item active" onclick="showPage('dashboard')">🏠 Dashboard</div>
-        <div class="nav-item" onclick="showPage('lista')">📂 Registro</div>
-        <div class="nav-item" onclick="showPage('qr-sect')">🖨️ Etichette</div>
+        <div style="font-size: 18px; font-weight: 700; color: var(--accent); margin-bottom: 30px;">ARCHIVIO CLOUD</div>
+        <div onclick="showPage('dashboard')" style="cursor:pointer; margin-bottom:15px">🏠 Dashboard</div>
+        <div onclick="showPage('lista')" style="cursor:pointer; margin-bottom:15px">📂 Registro</div>
     </div>
 
     <div class="main">
         <div id="page-dashboard" class="page active">
-            <h1 style="margin-bottom:20px">Dashboard Informativa</h1>
+            <h1>Dashboard</h1>
             <div class="stats-grid">
-                <div class="stat-card"><div>Totale</div><div class="stat-val" style="font-size:28px" id="st-tot">0</div></div>
-                <div class="stat-card" style="border-left-color: var(--green);"><div>In Sede</div><div class="stat-val" style="font-size:28px" id="st-sede">0</div></div>
-                <div class="stat-card" style="border-left-color: var(--red);"><div>Prelevati</div><div class="stat-val" style="font-size:28px" id="st-fuori">0</div></div>
-                <div class="stat-card" style="border-left-color: #5a8fad;"><div>Gruppi</div><div class="stat-val" style="font-size:28px" id="st-gruppi">0</div></div>
+                <div class="stat-card"><div>Totale</div><div id="st-tot" class="stat-val">0</div></div>
+                <div class="stat-card" style="border-left-color: var(--green);"><div>In Sede</div><div id="st-sede" class="stat-val">0</div></div>
+                <div class="stat-card" style="border-left-color: var(--red);"><div>Fuori</div><div id="st-fuori" class="stat-val">0</div></div>
+                <div class="stat-card" style="border-left-color: #5a8fad;"><div>Gruppi</div><div id="st-gruppi" class="stat-val">0</div></div>
             </div>
-            <div class="content-card"><h3>Movimenti Recenti</h3><table id="mini-lista"></table></div>
+            <div class="content-card"><h3>Database Cloud</h3><table id="full-lista-mini"></table></div>
         </div>
 
-        <div id="page-lista" class="page">
+        <div id="page-lista" class="page" style="display:none">
             <div class="content-card">
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 20px;" id="form-container">
-                    <input type="text" id="newNum" placeholder="N°">
-                    <input type="text" id="newAnno" placeholder="Anno">
-                    <input type="text" id="newGruppo" placeholder="Ripiano">
-                    <button class="btn-add" onclick="azioneCloud('add')">Aggiungi</button>
-                </div>
-                <input type="text" id="search" placeholder="🔍 Cerca per numero, ripiano o dottore..." onkeyup="filter()" style="border: 1px solid var(--accent);">
-                <table>
-                    <thead><tr><th>Fascicolo</th><th>Ripiano</th><th>Stato</th><th>Dettagli</th><th>Azioni</th></tr></thead>
-                    <tbody id="full-lista"></tbody>
-                </table>
+                <input type="text" id="newNum" placeholder="Numero">
+                <input type="text" id="newAnno" placeholder="Anno">
+                <input type="text" id="newGruppo" placeholder="Ripiano">
+                <button class="btn-add" onclick="azioneCloud('add')">Aggiungi Fascicolo</button>
+                <hr style="margin:20px 0; opacity:0.1">
+                <input type="text" id="search" placeholder="🔍 Cerca..." onkeyup="filter()">
+                <div style="overflow-x: auto;"><table id="full-lista"></table></div>
             </div>
         </div>
-
-        <div id="page-qr-sect" class="page"><h1>Stampa QR Ripiani</h1><div id="lista-qr-gruppi"></div></div>
     </div>
 
-    <div id="print-area"><h1 id="p-title"></h1><div id="qrcode" style="display:flex; justify-content:center; margin:30px"></div><p>Scansiona per consultare il ripiano</p></div>
-
     <script>
+        // URL TESTATO E FUNZIONANTE
         const API_URL = "https://script.google.com/macros/s/AKfycbyo9QEUQfs8GymqVVjwuDXfLi_LtTLq4xspMJ-HKfTvQCkrTumiT4mp5pb9mJ5KwzhvuQ/exec";
         let dbCache = [];
 
         async function caricaDati() {
-            document.getElementById('loading-overlay').style.display = 'flex';
+            const loader = document.getElementById('loading-overlay');
+            loader.style.display = 'flex';
             try {
-                const response = await fetch(API_URL);
+                // Usiamo un metodo di fetch più robusto
+                const response = await fetch(API_URL, { method: 'GET', mode: 'cors', redirect: 'follow' });
+                if (!response.ok) throw new Error("Errore risposta");
                 dbCache = await response.json();
                 render();
-            } catch (e) { alert("Errore di connessione al Cloud"); }
-            document.getElementById('loading-overlay').style.display = 'none';
+            } catch (e) {
+                console.error("Errore Fetch:", e);
+                alert("Connessione Cloud non riuscita. Verifica che il Foglio Google abbia il tab denominato 'Dati'.");
+            }
+            loader.style.display = 'none';
         }
 
-        async function azioneCloud(tipo, extraData = {}) {
+        async function azioneCloud(tipo, extra = {}) {
             document.getElementById('loading-overlay').style.display = 'flex';
             const payload = {
                 action: tipo,
-                Numero: extraData.Numero || document.getElementById('newNum').value,
-                Anno: extraData.Anno || document.getElementById('newAnno').value,
-                Gruppo: extraData.Gruppo || document.getElementById('newGruppo').value,
-                Stato: extraData.Stato || "In sede",
-                Note: extraData.Note || ""
+                Numero: extra.Numero || document.getElementById('newNum').value,
+                Anno: extra.Anno || document.getElementById('newAnno').value,
+                Gruppo: extra.Gruppo || document.getElementById('newGruppo').value,
+                Stato: extra.Stato || "In sede",
+                Note: extra.Note || ""
             };
-
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-            if(tipo === 'add') { document.getElementById('newNum').value=''; document.getElementById('newAnno').value=''; }
-            await caricaDati();
+            try {
+                await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload), mode: 'no-cors' });
+                // Dopo un POST no-cors aspettiamo un secondo e ricarichiamo
+                setTimeout(caricaDati, 1500);
+            } catch(e) { alert("Errore invio"); }
         }
 
         function render() {
@@ -123,37 +102,29 @@
             document.getElementById('st-fuori').innerText = dbCache.filter(x => x.Stato === 'Prelevato').length;
             document.getElementById('st-gruppi').innerText = [...new Set(dbCache.map(x => x.Gruppo))].filter(x => x).length;
 
-            document.getElementById('full-lista').innerHTML = dbCache.map((f, i) => `
+            const rows = dbCache.map((f, i) => `
                 <tr>
-                    <td data-label="Fascicolo"><b>${f.Numero}/${f.Anno}</b></td>
-                    <td data-label="Ripiano">${f.Gruppo || '-'}</td>
-                    <td data-label="Stato"><span class="badge ${f.Stato === 'Prelevato' ? 'badge-fuori' : 'badge-sede'}">${f.Stato || 'In sede'}</span></td>
-                    <td data-label="Dettagli" style="font-size:11px; color:var(--text-dim)">${f.Note || '-'}</td>
-                    <td style="white-space:nowrap">
-                        <span onclick="gestisciPrestito(${i})" style="cursor:pointer; font-size:20px; margin-right:10px">🤝</span>
-                    </td>
-                </tr>
-            `).join('');
-            
-            if(document.getElementById('page-qr-sect').classList.contains('active')) renderQRList();
+                    <td><b>${f.Numero}/${f.Anno}</b><br><small>${f.Gruppo}</small></td>
+                    <td><span style="color:${f.Stato==='Prelevato'?'#ff6b6b':'#5aad7a'}">${f.Stato||'In sede'}</span></td>
+                    <td><button onclick="gestisci(${i})">🤝</button></td>
+                </tr>`).join('');
+            document.getElementById('full-lista').innerHTML = rows;
+            document.getElementById('full-lista-mini').innerHTML = rows;
         }
 
-        function gestisciPrestito(i) {
+        function gestisci(i) {
             const f = dbCache[i];
-            const oggi = new Date().toLocaleDateString('it-IT');
             if (f.Stato !== "Prelevato") {
-                const dott = prompt("Chi prende il fascicolo?");
-                if (dott) azioneCloud('update', { ...f, Stato: "Prelevato", Note: "Preso da " + dott + " il " + oggi });
+                const d = prompt("Chi preleva?");
+                if(d) azioneCloud('update', {...f, Stato:"Prelevato", Note:"Preso da "+d});
             } else {
-                if (confirm("Confermi il rientro?")) azioneCloud('update', { ...f, Stato: "In sede", Note: "Rientrato il " + oggi });
+                if(confirm("Rientro?")) azioneCloud('update', {...f, Stato:"In sede", Note:""});
             }
         }
 
         function showPage(id) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('page-' + id).classList.add('active');
-            if(id === 'qr-sect') renderQRList();
+            document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+            document.getElementById('page-' + id).style.display = 'block';
         }
 
         function filter() {
@@ -161,28 +132,7 @@
             document.querySelectorAll('#full-lista tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none');
         }
 
-        function renderQRList() {
-            const gruppi = [...new Set(dbCache.map(x => x.Gruppo))].filter(x => x);
-            document.getElementById('lista-qr-gruppi').innerHTML = gruppi.map(g => `
-                <div class="content-card" style="display:flex; justify-content:space-between; align-items:center">
-                    <b>${g}</b><button onclick="stampa('${g}')" style="width:auto" class="btn-add">STAMPA QR</button>
-                </div>`).join('');
-        }
-
-        function stampa(g) {
-            const printArea = document.getElementById('print-area');
-            document.getElementById('p-title').innerText = g;
-            document.getElementById('qrcode').innerHTML = "";
-            printArea.style.display = 'block';
-            new QRCode(document.getElementById("qrcode"), { text: window.location.href.split('?')[0] + "?cerca=" + encodeURIComponent(g), width: 250, height: 250 });
-            setTimeout(() => { window.print(); printArea.style.display = 'none'; }, 1000);
-        }
-
-        window.onload = () => {
-            caricaDati();
-            const urlParams = new URLSearchParams(window.location.search);
-            if(urlParams.has('cerca')) { document.getElementById('search').value = urlParams.get('cerca'); filter(); showPage('lista'); }
-        };
+        window.onload = caricaDati;
     </script>
 </body>
 </html>
