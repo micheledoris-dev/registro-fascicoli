@@ -1,3 +1,15 @@
+Hai ragione, nel passaggio a Firebase abbiamo puntato alla stabilità e abbiamo tralasciato i tasti per la "manutenzione" dei dati. Aggiungiamoli subito!
+
+Ho aggiornato il codice per inserire:
+
+Il Cestino (Elimina): Per cancellare i fascicoli inseriti per errore.
+
+La Matita (Modifica): Per correggere numero, anno o ripiano se hai fatto un errore di battitura.
+
+Conferma di eliminazione: Per evitare di cancellare roba per sbaglio toccando lo schermo.
+
+Copia e sostituisci tutto su GitHub (Versione con Modifica ed Elimina):
+HTML
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -11,7 +23,7 @@
     <style>
         :root { --bg: #0b0b0b; --card-bg: #161616; --accent: #e8c97a; --text-main: #f0ece0; --text-dim: #a09880; --border: #262626; --red: #e05555; --green: #5aad7a; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; }
         .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 24px; position: fixed; height: 100vh; z-index: 100; }
         .main { margin-left: 260px; padding: 20px; width: calc(100% - 260px); }
         @media (max-width: 900px) { .sidebar { display: none; } .main { margin-left: 0; width: 100%; padding: 15px; } .stats-grid { grid-template-columns: 1fr 1fr !important; } }
@@ -25,6 +37,7 @@
         .btn-add { background: var(--accent); color: black; border: none; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; }
         table { width: 100%; border-collapse: collapse; }
         td, th { padding: 12px; text-align: left; border-bottom: 1px solid #222; }
+        .action-btn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 5px; }
         .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; }
         .badge-fuori { background: rgba(224,85,85,0.2); color: #ff6b6b; }
         .badge-sede { background: rgba(90,173,122,0.1); color: var(--green); }
@@ -37,29 +50,29 @@
         <div style="font-size: 18px; font-weight: 700; color: var(--accent); margin-bottom: 30px;">ARCHIVIO PRO</div>
         <div class="nav-item active" id="n-dash" onclick="showPage('dashboard')">🏠 Dashboard</div>
         <div class="nav-item" id="n-list" onclick="showPage('lista')">📂 Registro</div>
-        <div class="nav-item" id="n-qr" onclick="showPage('qr-sect')">🖨️ Etichette</div>
+        <div class="nav-item" id="n-qr" onclick="showPage('qr-sect')">🖨️ Etichette QR</div>
     </div>
 
     <div class="main">
         <div id="page-dashboard" class="page active">
-            <h1>Stato Archivio</h1>
+            <h1>Dashboard Informativa</h1>
             <div class="stats-grid">
                 <div class="stat-card"><div>Totale</div><div id="st-tot" class="stat-val">0</div></div>
                 <div class="stat-card" style="border-left-color: var(--green);"><div>In Sede</div><div id="st-sede" class="stat-val">0</div></div>
                 <div class="stat-card" style="border-left-color: var(--red);"><div>Fuori</div><div id="st-fuori" class="stat-val">0</div></div>
                 <div class="stat-card" style="border-left-color: #5a8fad;"><div>Gruppi</div><div id="st-gruppi" class="stat-val">0</div></div>
             </div>
-            <div class="content-card"><h3>Ultimi Movimenti</h3><table id="mini-table"></table></div>
+            <div class="content-card"><h3>Movimenti Recenti</h3><table id="mini-table"></table></div>
         </div>
 
         <div id="page-lista" class="page" style="display:none">
             <div class="content-card">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <input type="text" id="in-num" placeholder="Numero">
+                    <input type="text" id="in-num" placeholder="N°">
                     <input type="text" id="in-anno" placeholder="Anno">
                 </div>
                 <input type="text" id="in-rip" placeholder="Ripiano / Gruppo">
-                <button class="btn-add" onclick="aggiungi()">AGGIUNGI FASCICOLO</button>
+                <button class="btn-add" id="main-btn" onclick="aggiungi()">Aggiungi Fascicolo</button>
             </div>
             <div class="content-card">
                 <input type="text" id="search" placeholder="🔍 Cerca..." onkeyup="filtra()">
@@ -68,7 +81,7 @@
         </div>
 
         <div id="page-qr-sect" class="page" style="display:none">
-            <h1>Stampa Etichette QR</h1>
+            <h1>Stampa QR Ripiani</h1>
             <div id="lista-qr-gruppi"></div>
         </div>
     </div>
@@ -89,6 +102,7 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database().ref('fascicoli');
+        let editingId = null;
 
         db.on('value', (snapshot) => {
             const data = snapshot.val();
@@ -98,14 +112,38 @@
 
         function aggiungi() {
             const n = document.getElementById('in-num').value, a = document.getElementById('in-anno').value, r = document.getElementById('in-rip').value;
-            if(!n || !a) return alert("Inserisci Numero e Anno");
-            db.push({ numero: n, anno: a, gruppo: r || "Generale", stato: "In sede", data: new Date().toISOString() });
-            document.getElementById('in-num').value = ""; document.getElementById('in-anno').value = "";
+            if(!n || !a) return alert("Dati mancanti!");
+            
+            if(editingId) {
+                db.child(editingId).update({ numero: n, anno: a, gruppo: r || "Generale" });
+                editingId = null;
+                document.getElementById('main-btn').innerText = "Aggiungi Fascicolo";
+                document.getElementById('main-btn').style.background = "var(--accent)";
+            } else {
+                db.push({ numero: n, anno: a, gruppo: r || "Generale", stato: "In sede", data: new Date().toISOString() });
+            }
+            document.getElementById('in-num').value = ""; document.getElementById('in-anno').value = ""; document.getElementById('in-rip').value = "";
+        }
+
+        function preparaModifica(id, n, a, r) {
+            editingId = id;
+            document.getElementById('in-num').value = n;
+            document.getElementById('in-anno').value = a;
+            document.getElementById('in-rip').value = r;
+            document.getElementById('main-btn').innerText = "SALVA MODIFICA";
+            document.getElementById('main-btn').style.background = "#5aad7a";
+            window.scrollTo(0,0);
+        }
+
+        function elimina(id) {
+            if(confirm("Sei sicuro di voler eliminare questo fascicolo?")) {
+                db.child(id).remove();
+            }
         }
 
         function toggleStato(id, attuale) {
             const nuovo = attuale === "In sede" ? "Prelevato" : "In sede";
-            let nota = nuovo === "Prelevato" ? prompt("Chi preleva il fascicolo?") : "";
+            let nota = nuovo === "Prelevato" ? prompt("A chi viene consegnato?") : "";
             if(nuovo === "Prelevato" && !nota) return;
             db.child(id).update({ stato: nuovo, nota: nota || "" });
         }
@@ -121,14 +159,18 @@
                 <tr>
                     <td><b>${f.numero}/${f.anno}</b><br><small>${f.gruppo} ${f.nota?'- '+f.nota:''}</small></td>
                     <td><span class="badge ${f.stato==='Prelevato'?'badge-fuori':'badge-sede'}">${f.stato}</span></td>
-                    <td onclick="toggleStato('${f.id}', '${f.stato}')" style="cursor:pointer; font-size:20px">🤝</td>
+                    <td>
+                        <button class="action-btn" onclick="toggleStato('${f.id}', '${f.stato}')">🤝</button>
+                        <button class="action-btn" onclick="preparaModifica('${f.id}', '${f.numero}', '${f.anno}', '${f.gruppo}')">✏️</button>
+                        <button class="action-btn" onclick="elimina('${f.id}')">🗑️</button>
+                    </td>
                 </tr>`).join('');
             document.getElementById('main-table').innerHTML = html;
             document.getElementById('mini-table').innerHTML = html.slice(0, 5);
 
             document.getElementById('lista-qr-gruppi').innerHTML = gruppi.map(g => `
                 <div class="content-card" style="display:flex; justify-content:space-between; align-items:center">
-                    <b>${g}</b><button onclick="stampa('${g}')" class="btn-add" style="width:auto; padding:8px 15px">STAMPA</button>
+                    <b>Ripiano: ${g}</b><button onclick="stampa('${g}')" class="btn-add" style="width:auto; padding:8px 15px">STAMPA QR</button>
                 </div>`).join('');
         }
 
@@ -152,7 +194,6 @@
             document.querySelectorAll('#main-table tr').forEach(tr => { tr.style.display = tr.innerText.toLowerCase().includes(val) ? '' : 'none'; });
         }
 
-        // Auto-filtro se arrivo da QR
         window.onload = () => {
             const params = new URLSearchParams(window.location.search);
             if(params.has('cerca')) { showPage('lista'); document.getElementById('search').value = params.get('cerca'); filtra(); }
