@@ -1,182 +1,211 @@
 <!DOCTYPE html>
-
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Archivio Fascicoli Pro</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-:root {
---bg: #0b0b0b; --card-bg: #161616; --accent: #e8c97a;
---text-main: #f0ece0; --text-dim: #a09880; --border: #262626;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-main); display: flex; min-height: 100vh; }
-  .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; position: fixed; height: 100vh; }
-    .logo { font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 40px; border-left: 3px solid var(--accent); padding-left: 15px; }
-    .nav-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); margin-bottom: 8px; transition: 0.2s; }
-    .nav-item:hover, .nav-item.active { background: rgba(232,201,122,0.1); color: var(--accent); }
-
-    .main { flex: 1; margin-left: 260px; padding: 30px; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-    
-    .content-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; }
-    
-    /* Modulo Inserimento */
-    .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 15px; }
-    .form-group { display: flex; flex-direction: column; gap: 5px; }
-    input, select { background: #0b0b0b; border: 1px solid var(--border); padding: 10px; border-radius: 8px; color: white; outline: none; }
-    input:focus { border-color: var(--accent); }
-    .btn-add { background: var(--accent); color: black; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 23px; transition: 0.2s; }
-    .btn-add:hover { background: #d4b66a; }
-
-    .search-container { position: relative; margin-bottom: 20px; }
-    .search-input { width: 100%; background: var(--card-bg); border: 1px solid var(--border); padding: 12px 40px; border-radius: 10px; color: white; font-size: 14px; outline: none; }
-    
-    table { width: 100%; border-collapse: collapse; min-width: 900px; }
-    th { text-align: left; padding: 12px; font-size: 11px; color: var(--text-dim); text-transform: uppercase; border-bottom: 1px solid var(--border); }
-    td { padding: 14px 12px; font-size: 13px; border-bottom: 1px solid #222; }
-    
-    .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; background: rgba(90,173,122,0.1); color: #5aad7a; }
-    .page { display: none; }
-    .page.active { display: block; }
-</style>
-<div class="sidebar">
-    <div class="logo">ARCHIVIO<br><span style="font-size: 11px; opacity: 0.6;">GESTIONE SENTENZE</span></div>
-    <div class="nav-item active" onclick="showPage('dashboard')">🏠 Dashboard</div>
-    <div class="nav-item" onclick="showPage('lista')">📂 Registro Fascicoli</div>
-    <div class="nav-item" onclick="showPage('import')">📥 Importa Excel</div>
-</div>
-
-<div class="main">
-    <div id="page-dashboard" class="page active">
-        <div class="header"><h1>Dashboard Informativa</h1></div>
-        <div style="background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
-            <h3>Benvenuto nell'Archivio Digitale</h3>
-            <p style="color: var(--text-dim); margin-top: 10px;">Usa il menu a sinistra per caricare file Excel o aggiungere singoli fascicoli manualmente.</p>
-        </div>
-    </div>
-
-    <div id="page-lista" class="page">
-        <div class="header"><h1>Registro Generale Fascicoli</h1></div>
-
-        <div class="content-card">
-            <h3 style="color: var(--accent); margin-bottom: 10px;">➕ Aggiungi Nuovo Fascicolo</h3>
-            <div class="form-grid">
-                <div class="form-group"><label>Numero</label><input type="text" id="newNum" placeholder="Es. 586"></div>
-                <div class="form-group"><label>Anno</label><input type="text" id="newAnno" placeholder="2026"></div>
-                <div class="form-group"><label>Gruppo/Ripiano</label><input type="text" id="newGruppo" placeholder="Ripiano 4"></div>
-                <button class="btn-add" onclick="aggiungiManuale()">Registra Fascicolo</button>
-            </div>
-        </div>
-
-        <div class="search-container">
-            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Cerca nel registro..." onkeyup="filterTable()">
-        </div>
-
-        <div class="content-card">
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Numero</th><th>Anno</th><th>Gruppo</th><th>Stato</th>
-                            <th>Data Arch.</th><th>Movimento</th><th>Chi</th><th>Data Mov.</th>
-                        </tr>
-                    </thead>
-                    <tbody id="full-lista"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div id="page-import" class="page">
-        <div class="header"><h1>Importazione Excel</h1></div>
-        <div class="content-card" style="text-align: center; padding: 60px;">
-            <input type="file" id="fileX" style="display:none" accept=".xlsx" onchange="importaExcel(this)">
-            <button class="btn-add" style="margin:0; padding: 15px 30px;" onclick="document.getElementById('fileX').click()">Seleziona File Excel (.xlsx)</button>
-            <p style="margin-top: 15px; color: var(--text-dim);">Carica il file con le 8 colonne per aggiornare l'intero database.</p>
-        </div>
-    </div>
-</div>
-
-<script>
-    function showPage(id) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById('page-' + id).classList.add('active');
-        event.currentTarget.classList.add('active');
-    }
-
-    // AGGIUNTA MANUALE (OPZIONE 2)
-    function aggiungiManuale() {
-        const num = document.getElementById('newNum').value;
-        const anno = document.getElementById('newAnno').value;
-        const gruppo = document.getElementById('newGruppo').value;
-
-        if(!num || !anno) return alert("Inserisci almeno Numero e Anno!");
-
-        const nuovo = {
-            "Numero": num,
-            "Anno": anno,
-            "Gruppo": gruppo,
-            "Stato": "In archivio",
-            "Data Archiviazione": new Date().toLocaleDateString('it-IT'),
-            "Ultimo Movimento": "inserimento manuale",
-            "Chi": "Operatore",
-            "Data Movimento": new Date().toLocaleDateString('it-IT')
-        };
-
-        let dati = JSON.parse(localStorage.getItem('sentenze_db') || '[]');
-        dati.unshift(nuovo); // Aggiunge in cima alla lista
-        localStorage.setItem('sentenze_db', JSON.stringify(dati));
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archivio Fascicoli Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0b0b; --card-bg: #161616; --accent: #e8c97a;
+            --text-main: #f0ece0; --text-dim: #a09880; --border: #262626;
+            --danger: #e05555;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-main); display: flex; min-height: 100vh; }
         
-        // Pulisce i campi
-        document.getElementById('newNum').value = '';
-        document.getElementById('newAnno').value = '';
-        document.getElementById('newGruppo').value = '';
+        .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; position: fixed; height: 100vh; }
+        .logo { font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 40px; border-left: 3px solid var(--accent); padding-left: 15px; }
+        .nav-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); margin-bottom: 8px; transition: 0.2s; }
+        .nav-item:hover, .nav-item.active { background: rgba(232,201,122,0.1); color: var(--accent); }
+
+        .main { flex: 1; margin-left: 260px; padding: 30px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .content-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; }
+        
+        /* Modulo Inserimento */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr 1.5fr auto; gap: 15px; align-items: end; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        input, select, datalist { background: #0b0b0b; border: 1px solid var(--border); padding: 10px; border-radius: 8px; color: white; outline: none; width: 100%; }
+        
+        .btn-add { background: var(--accent); color: black; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-action { background: none; border: none; cursor: pointer; padding: 5px; font-size: 16px; margin-right: 5px; }
+
+        .search-input { width: 100%; background: var(--card-bg); border: 1px solid var(--border); padding: 12px; border-radius: 10px; color: white; margin-bottom: 20px; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; font-size: 11px; color: var(--text-dim); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 12px; font-size: 13px; border-bottom: 1px solid #222; }
+        
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; background: rgba(90,173,122,0.1); color: #5aad7a; }
+        .page { display: none; }
+        .page.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo">ARCHIVIO<br><span style="font-size: 11px; opacity: 0.6;">GESTIONE SENTENZE</span></div>
+        <div class="nav-item active" onclick="showPage('dashboard')">🏠 Dashboard</div>
+        <div class="nav-item" onclick="showPage('lista')">📂 Registro Fascicoli</div>
+        <div class="nav-item" onclick="showPage('import')">📥 Importa Excel</div>
+    </div>
+
+    <div class="main">
+        <div id="page-dashboard" class="page active">
+            <div class="header"><h1>Dashboard Informativa</h1></div>
+            <div class="content-card"><h3>Benvenuto</h3><p>Seleziona un'opzione dal menu.</p></div>
+        </div>
+
+        <div id="page-lista" class="page">
+            <div class="header"><h1>Registro Generale Fascicoli</h1></div>
+
+            <div class="content-card">
+                <h3 style="color: var(--accent); margin-bottom: 15px;">➕ Aggiungi / Modifica Fascicolo</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Numero</label><input type="text" id="newNum"></div>
+                    <div class="form-group"><label>Anno</label><input type="text" id="newAnno"></div>
+                    <div class="form-group">
+                        <label>Gruppo/Ripiano</label>
+                        <input list="gruppi-list" id="newGruppo" placeholder="Scegli o scrivi...">
+                        <datalist id="gruppi-list"></datalist>
+                    </div>
+                    <input type="hidden" id="editIndex" value="-1">
+                    <button class="btn-add" id="btnSave" onclick="salvaFascicolo()">Registra</button>
+                </div>
+            </div>
+
+            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Cerca nel registro..." onkeyup="filterTable()">
+
+            <div class="content-card">
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>N°/Anno</th><th>Gruppo</th><th>Stato</th><th>Data Arch.</th><th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="full-lista"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-import" class="page">
+            <div class="header"><h1>Importazione</h1></div>
+            <div class="content-card" style="text-align:center">
+                <button class="btn-add" onclick="document.getElementById('fileX').click()">Seleziona File Excel</button>
+                <input type="file" id="fileX" style="display:none" onchange="importaExcel(this)">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showPage(id) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + id).classList.add('active');
+            if(event) event.currentTarget.classList.add('active');
+        }
+
+        function salvaFascicolo() {
+            const num = document.getElementById('newNum').value;
+            const anno = document.getElementById('newAnno').value;
+            const gruppo = document.getElementById('newGruppo').value;
+            const editIdx = parseInt(document.getElementById('editIndex').value);
+
+            if(!num || !anno) return alert("Compila i campi obbligatori!");
+
+            let dati = JSON.parse(localStorage.getItem('sentenze_db') || '[]');
+
+            const record = {
+                "Numero": num, "Anno": anno, "Gruppo": gruppo,
+                "Stato": "In archivio", "Data Archiviazione": new Date().toLocaleDateString('it-IT'),
+                "Ultimo Movimento": editIdx === -1 ? "Inserimento" : "Modifica",
+                "Chi": "Operatore", "Data Movimento": new Date().toLocaleDateString('it-IT')
+            };
+
+            if(editIdx === -1) { dati.unshift(record); } 
+            else { dati[editIdx] = record; }
+
+            localStorage.setItem('sentenze_db', JSON.stringify(dati));
+            resetForm();
+            render();
+            alert("Operazione completata!");
+        }
+
+        function preparaModifica(index) {
+            const dati = JSON.parse(localStorage.getItem('sentenze_db'));
+            const f = dati[index];
+            document.getElementById('newNum').value = f.Numero;
+            document.getElementById('newAnno').value = f.Anno;
+            document.getElementById('newGruppo').value = f.Gruppo;
+            document.getElementById('editIndex').value = index;
+            document.getElementById('btnSave').innerText = "Aggiorna";
+            window.scrollTo(0,0);
+        }
+
+        function eliminaFascicolo(index) {
+            if(confirm("Sei sicuro di voler eliminare questo fascicolo?")) {
+                if(confirm("CONFERMA DEFINITIVA: L'azione non è reversibile. Procedere?")) {
+                    let dati = JSON.parse(localStorage.getItem('sentenze_db'));
+                    dati.splice(index, 1);
+                    localStorage.setItem('sentenze_db', JSON.stringify(dati));
+                    render();
+                }
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('newNum').value = '';
+            document.getElementById('newAnno').value = '';
+            document.getElementById('newGruppo').value = '';
+            document.getElementById('editIndex').value = '-1';
+            document.getElementById('btnSave').innerText = "Registra";
+        }
+
+        function importaExcel(input) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const wb = XLSX.read(data, {type: 'array'});
+                const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                localStorage.setItem('sentenze_db', JSON.stringify(json));
+                render();
+                showPage('lista');
+            };
+            reader.readAsArrayBuffer(input.files[0]);
+        }
+
+        function render() {
+            const dati = JSON.parse(localStorage.getItem('sentenze_db') || '[]');
+            
+            // Aggiorna Dropdown Gruppi
+            const gruppiUnici = [...new Set(dati.map(f => f.Gruppo))].filter(g => g);
+            document.getElementById('gruppi-list').innerHTML = gruppiUnici.map(g => `<option value="${g}">`).join('');
+
+            document.getElementById('full-lista').innerHTML = dati.map((f, i) => `
+                <tr>
+                    <td style="color:var(--accent); font-weight:700">${f.Numero}/${f.Anno}</td>
+                    <td>${f.Gruppo || '-'}</td>
+                    <td><span class="badge">${f.Stato || '-'}</span></td>
+                    <td>${f.DataArchiviazione || f['Data Archiviazione'] || '-'}</td>
+                    <td>
+                        <button class="btn-action" onclick="preparaModifica(${i})">✏️</button>
+                        <button class="btn-action" onclick="eliminaFascicolo(${i})">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterTable() {
+            const val = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#full-lista tr');
+            rows.forEach(row => row.style.display = row.innerText.toLowerCase().includes(val) ? '' : 'none');
+        }
 
         render();
-        alert("Fascicolo registrato correttamente!");
-    }
-
-    function importaExcel(input) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const data = new Uint8Array(e.target.result);
-            const wb = XLSX.read(data, {type: 'array'});
-            const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-            localStorage.setItem('sentenze_db', JSON.stringify(json));
-            render();
-            showPage('lista');
-        };
-        reader.readAsArrayBuffer(input.files[0]);
-    }
-
-    function render() {
-        const dati = JSON.parse(localStorage.getItem('sentenze_db') || '[]');
-        document.getElementById('full-lista').innerHTML = dati.map(f => `
-            <tr>
-                <td style="color:var(--accent); font-weight:700">${f.Numero || '-'}</td>
-                <td>${f.Anno || '-'}</td>
-                <td>${f.Gruppo || '-'}</td>
-                <td><span class="badge">${f.Stato || '-'}</span></td>
-                <td>${f.DataArchiviazione || f['Data Archiviazione'] || '-'}</td>
-                <td>${f.UltimoMovimento || f['Ultimo Movimento'] || '-'}</td>
-                <td>${f.Chi || '-'}</td>
-                <td>${f.DataMovimento || f['Data Movimento'] || '-'}</td>
-            </tr>
-        `).join('');
-    }
-
-    function filterTable() {
-        const val = document.getElementById('searchInput').value.toLowerCase();
-        const rows = document.querySelectorAll('#full-lista tr');
-        rows.forEach(row => {
-            row.style.display = row.innerText.toLowerCase().includes(val) ? '' : 'none';
-        });
-    }
-
-    render();
-</script>
+    </script>
+</body>
+</html>
