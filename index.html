@@ -3,44 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archivio Fascicoli Pro</title>
+    <title>Archivio Fascicoli Pro + QR</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #0b0b0b; --card-bg: #161616; --accent: #e8c97a;
-            --text-main: #f0ece0; --text-dim: #a09880; --border: #262626;
-            --danger: #e05555;
-        }
+        :root { --bg: #0b0b0b; --card-bg: #161616; --accent: #e8c97a; --text-main: #f0ece0; --text-dim: #a09880; --border: #262626; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-main); display: flex; min-height: 100vh; }
         
-        .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; position: fixed; height: 100vh; }
+        /* Sidebar */
+        .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 24px; position: fixed; height: 100vh; }
         .logo { font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 40px; border-left: 3px solid var(--accent); padding-left: 15px; }
-        .nav-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); margin-bottom: 8px; transition: 0.2s; }
+        .nav-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); margin-bottom: 8px; }
         .nav-item:hover, .nav-item.active { background: rgba(232,201,122,0.1); color: var(--accent); }
 
         .main { flex: 1; margin-left: 260px; padding: 30px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .content-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; }
         
-        /* Modulo Inserimento */
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr 1.5fr auto; gap: 15px; align-items: end; }
-        .form-group { display: flex; flex-direction: column; gap: 5px; }
-        input, select, datalist { background: #0b0b0b; border: 1px solid var(--border); padding: 10px; border-radius: 8px; color: white; outline: none; width: 100%; }
-        
-        .btn-add { background: var(--accent); color: black; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; }
-        .btn-action { background: none; border: none; cursor: pointer; padding: 5px; font-size: 16px; margin-right: 5px; }
+        /* Form e Pulsanti */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr 1.5fr auto; gap: 15px; align-items: end; margin-bottom: 20px; }
+        input { background: #0b0b0b; border: 1px solid var(--border); padding: 10px; border-radius: 8px; color: white; width: 100%; }
+        .btn-add { background: var(--accent); color: black; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        .btn-qr { background: #333; color: white; border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
 
-        .search-input { width: 100%; background: var(--card-bg); border: 1px solid var(--border); padding: 12px; border-radius: 10px; color: white; margin-bottom: 20px; }
-        
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 12px; font-size: 11px; color: var(--text-dim); text-transform: uppercase; border-bottom: 1px solid var(--border); }
         td { padding: 12px; font-size: 13px; border-bottom: 1px solid #222; }
-        
-        .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; background: rgba(90,173,122,0.1); color: #5aad7a; }
+
         .page { display: none; }
         .page.active { display: block; }
+
+        /* Stile per la stampa QR */
+        #print-area { display: none; background: white; color: black; padding: 50px; text-align: center; }
+        @media print {
+            body * { display: none !important; }
+            #print-area { display: block !important; width: 100%; height: 100%; }
+            #qrcode { margin: 40px auto; display: flex; justify-content: center; }
+        }
     </style>
 </head>
 <body>
@@ -49,56 +49,51 @@
         <div class="logo">ARCHIVIO<br><span style="font-size: 11px; opacity: 0.6;">GESTIONE SENTENZE</span></div>
         <div class="nav-item active" onclick="showPage('dashboard')">🏠 Dashboard</div>
         <div class="nav-item" onclick="showPage('lista')">📂 Registro Fascicoli</div>
+        <div class="nav-item" onclick="showPage('qr-sect')">🖨️ Stampa Etichette QR</div>
         <div class="nav-item" onclick="showPage('import')">📥 Importa Excel</div>
     </div>
 
     <div class="main">
-        <div id="page-dashboard" class="page active">
-            <div class="header"><h1>Dashboard Informativa</h1></div>
-            <div class="content-card"><h3>Benvenuto</h3><p>Seleziona un'opzione dal menu.</p></div>
-        </div>
-
         <div id="page-lista" class="page">
-            <div class="header"><h1>Registro Generale Fascicoli</h1></div>
-
+            <div class="header" style="margin-bottom:20px"><h1>Registro Generale</h1></div>
             <div class="content-card">
-                <h3 style="color: var(--accent); margin-bottom: 15px;">➕ Aggiungi / Modifica Fascicolo</h3>
                 <div class="form-grid">
-                    <div class="form-group"><label>Numero</label><input type="text" id="newNum"></div>
-                    <div class="form-group"><label>Anno</label><input type="text" id="newAnno"></div>
-                    <div class="form-group">
+                    <div style="display:flex; flex-direction:column; gap:5px"><label>Numero</label><input type="text" id="newNum"></div>
+                    <div style="display:flex; flex-direction:column; gap:5px"><label>Anno</label><input type="text" id="newAnno"></div>
+                    <div style="display:flex; flex-direction:column; gap:5px">
                         <label>Gruppo/Ripiano</label>
                         <input list="gruppi-list" id="newGruppo" placeholder="Scegli o scrivi...">
                         <datalist id="gruppi-list"></datalist>
                     </div>
-                    <input type="hidden" id="editIndex" value="-1">
-                    <button class="btn-add" id="btnSave" onclick="salvaFascicolo()">Registra</button>
+                    <button class="btn-add" onclick="salvaFascicolo()">Registra</button>
                 </div>
-            </div>
-
-            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Cerca nel registro..." onkeyup="filterTable()">
-
-            <div class="content-card">
+                <input type="text" id="searchInput" placeholder="🔍 Cerca nel registro..." onkeyup="filterTable()" style="background:transparent; margin-bottom:15px">
                 <div style="overflow-x: auto;">
                     <table>
-                        <thead>
-                            <tr>
-                                <th>N°/Anno</th><th>Gruppo</th><th>Stato</th><th>Data Arch.</th><th>Azioni</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>N°/Anno</th><th>Gruppo</th><th>Stato</th><th>Azioni</th></tr></thead>
                         <tbody id="full-lista"></tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <div id="page-import" class="page">
-            <div class="header"><h1>Importazione</h1></div>
-            <div class="content-card" style="text-align:center">
-                <button class="btn-add" onclick="document.getElementById('fileX').click()">Seleziona File Excel</button>
-                <input type="file" id="fileX" style="display:none" onchange="importaExcel(this)">
+        <div id="page-qr-sect" class="page">
+            <div class="header" style="margin-bottom:20px"><h1>Generatore Etichette Gruppi</h1></div>
+            <div class="content-card">
+                <p style="color:var(--text-dim); margin-bottom:20px">Seleziona un gruppo per generare il codice QR da incollare sullo scaffale.</p>
+                <div id="lista-gruppi-qr"></div>
             </div>
         </div>
+
+        <div id="page-dashboard" class="page active"><h1>Dashboard</h1><div class="content-card">Carica i dati per iniziare.</div></div>
+        <div id="page-import" class="page"><h1>Importazione</h1><div class="content-card" style="text-align:center"><button class="btn-add" onclick="document.getElementById('fileX').click()">Carica Excel</button><input type="file" id="fileX" style="display:none" onchange="importaExcel(this)"></div></div>
+    </div>
+
+    <div id="print-area">
+        <h1 id="print-title" style="font-size: 40px; margin-bottom: 20px;"></h1>
+        <p style="font-size: 20px; margin-bottom: 40px;">Contenuto Archivio Digitale</p>
+        <div id="qrcode"></div>
+        <p style="margin-top: 40px; font-size: 14px; color: #666;">Inquadra per vedere i fascicoli in questo gruppo</p>
     </div>
 
     <script>
@@ -107,62 +102,46 @@
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById('page-' + id).classList.add('active');
             if(event) event.currentTarget.classList.add('active');
+            if(id === 'qr-sect') renderGruppiQR();
         }
 
         function salvaFascicolo() {
             const num = document.getElementById('newNum').value;
             const anno = document.getElementById('newAnno').value;
             const gruppo = document.getElementById('newGruppo').value;
-            const editIdx = parseInt(document.getElementById('editIndex').value);
-
-            if(!num || !anno) return alert("Compila i campi obbligatori!");
-
+            if(!num || !anno) return alert("Mancano dati!");
             let dati = JSON.parse(localStorage.getItem('sentenze_db') || '[]');
-
-            const record = {
-                "Numero": num, "Anno": anno, "Gruppo": gruppo,
-                "Stato": "In archivio", "Data Archiviazione": new Date().toLocaleDateString('it-IT'),
-                "Ultimo Movimento": editIdx === -1 ? "Inserimento" : "Modifica",
-                "Chi": "Operatore", "Data Movimento": new Date().toLocaleDateString('it-IT')
-            };
-
-            if(editIdx === -1) { dati.unshift(record); } 
-            else { dati[editIdx] = record; }
-
+            dati.unshift({"Numero":num, "Anno":anno, "Gruppo":gruppo, "Stato":"In archivio", "Data Archiviazione": new Date().toLocaleDateString()});
             localStorage.setItem('sentenze_db', JSON.stringify(dati));
-            resetForm();
             render();
-            alert("Operazione completata!");
+            alert("Salvato!");
         }
 
-        function preparaModifica(index) {
-            const dati = JSON.parse(localStorage.getItem('sentenze_db'));
-            const f = dati[index];
-            document.getElementById('newNum').value = f.Numero;
-            document.getElementById('newAnno').value = f.Anno;
-            document.getElementById('newGruppo').value = f.Gruppo;
-            document.getElementById('editIndex').value = index;
-            document.getElementById('btnSave').innerText = "Aggiorna";
-            window.scrollTo(0,0);
+        function renderGruppiQR() {
+            const dati = JSON.parse(localStorage.getItem('sentenze_db') || '[]');
+            const gruppi = [...new Set(dati.map(f => f.Gruppo))].filter(g => g);
+            document.getElementById('lista-gruppi-qr').innerHTML = gruppi.map(g => `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:15px; border-bottom:1px solid #222">
+                    <span style="font-weight:bold">${g}</span>
+                    <button class="btn-qr" onclick="stampaQR('${g}')">STAMPA ETICHETTA QR</button>
+                </div>
+            `).join('');
         }
 
-        function eliminaFascicolo(index) {
-            if(confirm("Sei sicuro di voler eliminare questo fascicolo?")) {
-                if(confirm("CONFERMA DEFINITIVA: L'azione non è reversibile. Procedere?")) {
-                    let dati = JSON.parse(localStorage.getItem('sentenze_db'));
-                    dati.splice(index, 1);
-                    localStorage.setItem('sentenze_db', JSON.stringify(dati));
-                    render();
-                }
-            }
-        }
+        function stampaQR(nomeGruppo) {
+            document.getElementById('print-title').innerText = nomeGruppo;
+            document.getElementById('qrcode').innerHTML = "";
+            
+            // Crea il link che il QR aprirà (l'indirizzo della tua app + il filtro gruppo)
+            const link = window.location.href.split('?')[0] + "?cerca=" + encodeURIComponent(nomeGruppo);
+            
+            new QRCode(document.getElementById("qrcode"), {
+                text: link,
+                width: 256,
+                height: 256
+            });
 
-        function resetForm() {
-            document.getElementById('newNum').value = '';
-            document.getElementById('newAnno').value = '';
-            document.getElementById('newGruppo').value = '';
-            document.getElementById('editIndex').value = '-1';
-            document.getElementById('btnSave').innerText = "Registra";
+            setTimeout(() => { window.print(); }, 500);
         }
 
         function importaExcel(input) {
@@ -180,23 +159,25 @@
 
         function render() {
             const dati = JSON.parse(localStorage.getItem('sentenze_db') || '[]');
-            
-            // Aggiorna Dropdown Gruppi
             const gruppiUnici = [...new Set(dati.map(f => f.Gruppo))].filter(g => g);
             document.getElementById('gruppi-list').innerHTML = gruppiUnici.map(g => `<option value="${g}">`).join('');
-
             document.getElementById('full-lista').innerHTML = dati.map((f, i) => `
                 <tr>
                     <td style="color:var(--accent); font-weight:700">${f.Numero}/${f.Anno}</td>
                     <td>${f.Gruppo || '-'}</td>
-                    <td><span class="badge">${f.Stato || '-'}</span></td>
-                    <td>${f.DataArchiviazione || f['Data Archiviazione'] || '-'}</td>
-                    <td>
-                        <button class="btn-action" onclick="preparaModifica(${i})">✏️</button>
-                        <button class="btn-action" onclick="eliminaFascicolo(${i})">🗑️</button>
-                    </td>
+                    <td><span style="color:#5aad7a">${f.Stato || '-'}</span></td>
+                    <td><button onclick="elimina(${i})" style="background:none; border:none; cursor:pointer">🗑️</button></td>
                 </tr>
             `).join('');
+
+            // Controllo se nell'URL c'è una ricerca automatica (da QR)
+            const urlParams = new URLSearchParams(window.location.search);
+            const cerca = urlParams.get('cerca');
+            if(cerca) {
+                document.getElementById('searchInput').value = cerca;
+                filterTable();
+                showPage('lista');
+            }
         }
 
         function filterTable() {
