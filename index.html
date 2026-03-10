@@ -97,20 +97,34 @@
         }
 
         function render() {
+            // Se non ci sono dati, svuota la tabella e esci
+            if (!dbCache || dbCache.length === 0) {
+                document.getElementById('full-lista').innerHTML = "<tr><td colspan='3'>Nessun dato trovato</td></tr>";
+                return;
+            }
+
             document.getElementById('st-tot').innerText = dbCache.length;
             document.getElementById('st-sede').innerText = dbCache.filter(x => x.Stato !== 'Prelevato').length;
             document.getElementById('st-fuori').innerText = dbCache.filter(x => x.Stato === 'Prelevato').length;
             document.getElementById('st-gruppi').innerText = [...new Set(dbCache.map(x => x.Gruppo))].filter(x => x).length;
 
-            const rows = dbCache.map((f, i) => `
+            const rows = dbCache.map((f, i) => {
+                // Protezione contro i nomi colonne sbagliati
+                const n = f.Numero || f.numero || f.N || "-";
+                const a = f.Anno || f.anno || f.A || "-";
+                const g = f.Gruppo || f.gruppo || f.Ripiano || "-";
+                const s = f.Stato || f.stato || "In sede";
+
+                return `
                 <tr>
-                    <td><b>${f.Numero}/${f.Anno}</b><br><small>${f.Gruppo}</small></td>
-                    <td><span style="color:${f.Stato==='Prelevato'?'#ff6b6b':'#5aad7a'}">${f.Stato||'In sede'}</span></td>
-                    <td><button onclick="gestisci(${i})">🤝</button></td>
-                </tr>`).join('');
+                    <td><b>${n}/${a}</b><br><small>${g}</small></td>
+                    <td><span style="color:${s ==='Prelevato'?'#ff6b6b':'#5aad7a'}">${s}</span></td>
+                    <td><button class="btn-add" style="padding:5px 10px; width:auto" onclick="gestisci(${i})">🤝</button></td>
+                </tr>`;
+            }).join('');
+            
             document.getElementById('full-lista').innerHTML = rows;
-            document.getElementById('full-lista-mini').innerHTML = rows;
-        }
+            if(document.g
 
         function gestisci(i) {
             const f = dbCache[i];
