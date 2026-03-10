@@ -197,11 +197,31 @@
         }
 
         function stampa(g) {
+            const printArea = document.getElementById('print-area');
+            const qrContainer = document.getElementById('qrcode');
+            
+            // 1. Prepariamo i testi
             document.getElementById('p-title').innerText = g;
-            document.getElementById('qrcode').innerHTML = "";
+            qrContainer.innerHTML = ""; 
+            
+            // 2. Rendiamo l'area visibile temporaneamente per il browser
+            printArea.style.display = 'block';
+            
             const link = window.location.href.split('?')[0] + "?cerca=" + encodeURIComponent(g);
-            new QRCode(document.getElementById("qrcode"), { text: link, width: 250, height: 250 });
-            setTimeout(() => { window.print(); }, 800);
+            
+            // 3. Generiamo il QR
+            new QRCode(qrContainer, { 
+                text: link, 
+                width: 250, 
+                height: 250,
+                correctLevel: QRCode.CorrectLevel.H 
+            });
+
+            // 4. Aspettiamo che il browser "disegni" effettivamente il QR prima di stampare
+            setTimeout(() => {
+                window.print();
+                printArea.style.display = 'none';
+            },
         }
 
         function filter() {
