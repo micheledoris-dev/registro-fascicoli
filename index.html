@@ -3,165 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Archivio Smart Cloud</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <title>Archivio Smart Pro</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #0b0b0b; --card-bg: #161616; --accent: #e8c97a; --text-main: #f0ece0; --text-dim: #a09880; --border: #262626; --red: #e05555; --green: #5aad7a; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; }
+        
         .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 24px; position: fixed; height: 100vh; z-index: 100; }
-        .main { margin-left: 260px; padding: 20px; width: calc(100% - 260px); }
-        @media (max-width: 900px) { .sidebar { display: none; } .main { margin-left: 0; width: 100%; padding: 15px; } .stats-grid { grid-template-columns: 1fr 1fr !important; } }
+        .main { margin-left: 260px; padding: 20px; width: calc(100% - 260px); transition: 0.3s; }
+
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; width: 100%; padding: 15px; }
+            .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+        }
+
+        .nav-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .nav-item.active { background: rgba(232,201,122,0.1); color: var(--accent); }
+        
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
         .stat-card { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border); border-left: 4px solid var(--accent); }
         .stat-val { font-size: 24px; font-weight: 700; color: white; }
+        
         .content-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 15px; margin-bottom: 20px; }
-        input { background: #0b0b0b; border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; width: 100%; margin-bottom: 8px; font-size: 16px; }
-        .btn-add { background: var(--accent); color: black; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; }
-        table { width: 100%; border-collapse: collapse; }
+        
+        input { background: #0b0b0b; border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; width: 100%; margin-bottom: 10px; font-size: 16px; outline: none; }
+        input:focus { border-color: var(--accent); }
+        .btn-add { background: var(--accent); color: black; border: none; padding: 14px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; transition: 0.2s; }
+        .btn-add:active { transform: scale(0.98); }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         td, th { padding: 12px; text-align: left; border-bottom: 1px solid #222; }
-        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); display:none; justify-content:center; align-items:center; z-index:999; flex-direction: column; }
+        
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .badge-fuori { background: rgba(224,85,85,0.2); color: #ff6b6b; }
+        .badge-sede { background: rgba(90,173,122,0.1); color: var(--green); }
+        
+        #loading { position: fixed; top: 20px; right: 20px; background: var(--accent); color: black; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; }
     </style>
 </head>
 <body>
-    <div id="loading-overlay">⌛ Caricamento Cloud...</div>
+    <div id="loading">Sincronizzazione...</div>
 
     <div class="sidebar">
-        <div style="font-size: 18px; font-weight: 700; color: var(--accent); margin-bottom: 30px;">ARCHIVIO CLOUD</div>
-        <div onclick="showPage('dashboard')" style="cursor:pointer; margin-bottom:15px">🏠 Dashboard</div>
-        <div onclick="showPage('lista')" style="cursor:pointer; margin-bottom:15px">📂 Registro</div>
+        <div style="font-size: 18px; font-weight: 700; color: var(--accent); margin-bottom: 30px;">ARCHIVIO PRO</div>
+        <div class="nav-item active" id="n-dash" onclick="showPage('dashboard')">🏠 Dashboard</div>
+        <div class="nav-item" id="n-list" onclick="showPage('lista')">📂 Registro</div>
     </div>
 
     <div class="main">
         <div id="page-dashboard" class="page active">
-            <h1>Dashboard</h1>
+            <h1 style="margin-bottom:20px">Stato Archivio</h1>
             <div class="stats-grid">
                 <div class="stat-card"><div>Totale</div><div id="st-tot" class="stat-val">0</div></div>
                 <div class="stat-card" style="border-left-color: var(--green);"><div>In Sede</div><div id="st-sede" class="stat-val">0</div></div>
                 <div class="stat-card" style="border-left-color: var(--red);"><div>Fuori</div><div id="st-fuori" class="stat-val">0</div></div>
                 <div class="stat-card" style="border-left-color: #5a8fad;"><div>Gruppi</div><div id="st-gruppi" class="stat-val">0</div></div>
             </div>
-            <div class="content-card"><h3>Database Cloud</h3><table id="full-lista-mini"></table></div>
+            <div class="content-card">
+                <h3>Ultimi Movimenti</h3>
+                <table id="mini-table"></table>
+            </div>
         </div>
 
         <div id="page-lista" class="page" style="display:none">
             <div class="content-card">
-                <input type="text" id="newNum" placeholder="Numero">
-                <input type="text" id="newAnno" placeholder="Anno">
-                <input type="text" id="newGruppo" placeholder="Ripiano">
-                <button class="btn-add" onclick="azioneCloud('add')">Aggiungi Fascicolo</button>
-                <hr style="margin:20px 0; opacity:0.1">
-                <input type="text" id="search" placeholder="🔍 Cerca..." onkeyup="filter()">
-                <div style="overflow-x: auto;"><table id="full-lista"></table></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <input type="text" id="in-num" placeholder="Numero">
+                    <input type="text" id="in-anno" placeholder="Anno">
+                </div>
+                <input type="text" id="in-rip" placeholder="Ripiano / Gruppo">
+                <button class="btn-add" onclick="aggiungi()">AGGIUNGI FASCICOLO</button>
+            </div>
+            
+            <div class="content-card">
+                <input type="text" id="search" placeholder="🔍 Cerca nel registro..." onkeyup="filtra()">
+                <div style="overflow-x: auto;">
+                    <table id="main-table"></table>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // URL TESTATO E FUNZIONANTE
-        const API_URL = "https://script.google.com/macros/s/AKfycbyo9QEUQfs8GymqVVjwuDXfLi_LtTLq4xspMJ-HKfTvQCkrTumiT4mp5pb9mJ5KwzhvuQ/exec";
-        let dbCache = [];
+        // CONFIGURAZIONE FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyC4PA_joHtGFRudPUYBOQAMrOgVearBt3I",
+            authDomain: "archivio-sentenze.firebaseapp.com",
+            databaseURL: "https://archivio-sentenze-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "archivio-sentenze",
+            storageBucket: "archivio-sentenze.appspot.com",
+            messagingSenderId: "139447095387",
+            appId: "1:139447095387:web:32d031468fa4c74a83af7e",
+            measurementId: "G-9NMKDSJ6JB"
+        };
 
-        async function caricaDati() {
-            console.log("Tentativo di connessione...");
-            try {
-                // Aggiungiamo un timestamp per saltare la cache di GitHub
-                const response = await fetch(API_URL + "?t=" + Array.from(crypto.getRandomValues(new Uint8Array(4))).map(b => b.toString(16).padStart(2, '0')).join(''), {
-                    method: 'GET',
-                    mode: 'cors',
-                    redirect: 'follow'
-                });
-                const data = await response.json();
-                console.log("Dati ricevuti:", data);
-                dbCache = data;
-                render();
-            } catch (e) {
-                console.error("Errore critico:", e);
-                // Se fallisce, prova a caricare almeno una riga finta per vedere se la grafica va
-                dbCache = [{Numero: "Errore", Anno: "Cloud", Gruppo: "Riprova", Stato: "In sede"}];
-                render();
-            }
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database().ref('fascicoli');
+
+        // Ascolta i cambiamenti in tempo reale
+        db.on('value', (snapshot) => {
+            document.getElementById('loading').style.display = 'block';
+            const data = snapshot.val();
+            const lista = data ? Object.keys(data).map(key => ({id: key, ...data[key]})) : [];
+            render(lista);
+            setTimeout(() => document.getElementById('loading').style.display = 'none', 500);
+        });
+
+        function aggiungi() {
+            const n = document.getElementById('in-num').value;
+            const a = document.getElementById('in-anno').value;
+            const r = document.getElementById('in-rip').value;
+            if(!n || !a) return alert("Inserisci Numero e Anno");
+
+            db.push({
+                numero: n,
+                anno: a,
+                gruppo: r || "Generale",
+                stato: "In sede",
+                data: new Date().toISOString()
+            });
+
+            document.getElementById('in-num').value = "";
+            document.getElementById('in-anno').value = "";
         }
 
-        async function azioneCloud(tipo) {
-            const payload = {
-                action: tipo,
-                Numero: document.getElementById('newNum').value,
-                Anno: document.getElementById('newAnno').value,
-                Gruppo: document.getElementById('newGruppo').value,
-                Stato: "In sede",
-                Note: ""
-            };
+        function toggleStato(id, attuale) {
+            const nuovo = attuale === "In sede" ? "Prelevato" : "In sede";
+            let nota = "";
+            if(nuovo === "Prelevato") {
+                nota = prompt("A chi viene consegnato?");
+                if(!nota) return;
+            }
+            db.child(id).update({ stato: nuovo, nota: nota || "" });
+        }
 
-            // Usiamo il metodo 'no-cors' per scrivere senza blocchi
-            fetch(API_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify(payload)
-            }).then(() => {
-                alert("Inviato! Attendi 2 secondi e ricarica.");
-                setTimeout(caricaDati, 2000);
+        function render(lista) {
+            // Stats
+            document.getElementById('st-tot').innerText = lista.length;
+            document.getElementById('st-sede').innerText = lista.filter(x => x.stato === 'In sede').length;
+            document.getElementById('st-fuori').innerText = lista.filter(x => x.stato === 'Prelevato').length;
+            document.getElementById('st-gruppi').innerText = [...new Set(lista.map(x => x.gruppo))].length;
+
+            const html = lista.reverse().map(f => `
+                <tr>
+                    <td><b>${f.numero}/${f.anno}</b><br><small>${f.gruppo}</small></td>
+                    <td><span class="badge ${f.stato==='Prelevato'?'badge-fuori':'badge-sede'}">${f.stato}</span></td>
+                    <td onclick="toggleStato('${f.id}', '${f.stato}')" style="cursor:pointer; font-size:20px">🤝</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('main-table').innerHTML = html;
+            document.getElementById('mini-table').innerHTML = html.slice(0, 5);
+        }
+
+        function showPage(p) {
+            document.querySelectorAll('.page').forEach(page => page.style.display = 'none');
+            document.getElementById('page-' + p).style.display = 'block';
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('n-' + (p === 'dashboard' ? 'dash' : 'list')).classList.add('active');
+        }
+
+        function filtra() {
+            const val = document.getElementById('search').value.toLowerCase();
+            document.querySelectorAll('#main-table tr').forEach(tr => {
+                tr.style.display = tr.innerText.toLowerCase().includes(val) ? '' : 'none';
             });
         }
-            try {
-                await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload), mode: 'no-cors' });
-                // Dopo un POST no-cors aspettiamo un secondo e ricarichiamo
-                setTimeout(caricaDati, 1500);
-            } catch(e) { alert("Errore invio"); }
-        }
-
-        function render() {
-            // Se non ci sono dati, svuota la tabella e esci
-            if (!dbCache || dbCache.length === 0) {
-                document.getElementById('full-lista').innerHTML = "<tr><td colspan='3'>Nessun dato trovato</td></tr>";
-                return;
-            }
-
-            document.getElementById('st-tot').innerText = dbCache.length;
-            document.getElementById('st-sede').innerText = dbCache.filter(x => x.Stato !== 'Prelevato').length;
-            document.getElementById('st-fuori').innerText = dbCache.filter(x => x.Stato === 'Prelevato').length;
-            document.getElementById('st-gruppi').innerText = [...new Set(dbCache.map(x => x.Gruppo))].filter(x => x).length;
-
-            const rows = dbCache.map((f, i) => {
-                // Protezione contro i nomi colonne sbagliati
-                const n = f.Numero || f.numero || f.N || "-";
-                const a = f.Anno || f.anno || f.A || "-";
-                const g = f.Gruppo || f.gruppo || f.Ripiano || "-";
-                const s = f.Stato || f.stato || "In sede";
-
-                return `
-                <tr>
-                    <td><b>${n}/${a}</b><br><small>${g}</small></td>
-                    <td><span style="color:${s ==='Prelevato'?'#ff6b6b':'#5aad7a'}">${s}</span></td>
-                    <td><button class="btn-add" style="padding:5px 10px; width:auto" onclick="gestisci(${i})">🤝</button></td>
-                </tr>`;
-            }).join('');
-            
-            document.getElementById('full-lista').innerHTML = rows;
-            if(document.g
-
-        function gestisci(i) {
-            const f = dbCache[i];
-            if (f.Stato !== "Prelevato") {
-                const d = prompt("Chi preleva?");
-                if(d) azioneCloud('update', {...f, Stato:"Prelevato", Note:"Preso da "+d});
-            } else {
-                if(confirm("Rientro?")) azioneCloud('update', {...f, Stato:"In sede", Note:""});
-            }
-        }
-
-        function showPage(id) {
-            document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
-            document.getElementById('page-' + id).style.display = 'block';
-        }
-
-        function filter() {
-            const v = document.getElementById('search').value.toLowerCase();
-            document.querySelectorAll('#full-lista tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none');
-        }
-
-        window.onload = caricaDati;
     </script>
 </body>
 </html>
