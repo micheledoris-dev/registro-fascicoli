@@ -64,31 +64,46 @@
         let dbCache = [];
 
         async function caricaDati() {
-            const loader = document.getElementById('loading-overlay');
-            loader.style.display = 'flex';
+            console.log("Tentativo di connessione...");
             try {
-                // Usiamo un metodo di fetch più robusto
-                const response = await fetch(API_URL, { method: 'GET', mode: 'cors', redirect: 'follow' });
-                if (!response.ok) throw new Error("Errore risposta");
-                dbCache = await response.json();
+                // Aggiungiamo un timestamp per saltare la cache di GitHub
+                const response = await fetch(API_URL + "?t=" + Array.from(crypto.getRandomValues(new Uint8Array(4))).map(b => b.toString(16).padStart(2, '0')).join(''), {
+                    method: 'GET',
+                    mode: 'cors',
+                    redirect: 'follow'
+                });
+                const data = await response.json();
+                console.log("Dati ricevuti:", data);
+                dbCache = data;
                 render();
             } catch (e) {
-                console.error("Errore Fetch:", e);
-                alert("Connessione Cloud non riuscita. Verifica che il Foglio Google abbia il tab denominato 'Dati'.");
+                console.error("Errore critico:", e);
+                // Se fallisce, prova a caricare almeno una riga finta per vedere se la grafica va
+                dbCache = [{Numero: "Errore", Anno: "Cloud", Gruppo: "Riprova", Stato: "In sede"}];
+                render();
             }
-            loader.style.display = 'none';
         }
 
-        async function azioneCloud(tipo, extra = {}) {
-            document.getElementById('loading-overlay').style.display = 'flex';
+        async function azioneCloud(tipo) {
             const payload = {
                 action: tipo,
-                Numero: extra.Numero || document.getElementById('newNum').value,
-                Anno: extra.Anno || document.getElementById('newAnno').value,
-                Gruppo: extra.Gruppo || document.getElementById('newGruppo').value,
-                Stato: extra.Stato || "In sede",
-                Note: extra.Note || ""
+                Numero: document.getElementById('newNum').value,
+                Anno: document.getElementById('newAnno').value,
+                Gruppo: document.getElementById('newGruppo').value,
+                Stato: "In sede",
+                Note: ""
             };
+
+            // Usiamo il metodo 'no-cors' per scrivere senza blocchi
+            fetch(API_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(payload)
+            }).then(() => {
+                alert("Inviato! Attendi 2 secondi e ricarica.");
+                setTimeout(caricaDati, 2000);
+            });
+        }
             try {
                 await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload), mode: 'no-cors' });
                 // Dopo un POST no-cors aspettiamo un secondo e ricarichiamo
