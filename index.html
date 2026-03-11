@@ -2,208 +2,161 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Archivio Smart Pro</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archivio Fascicoli Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        :root { --bg: #0b0b0b; --card-bg: #161616; --accent: #e8c97a; --text-main: #f0ece0; --text-dim: #a09880; --border: #262626; --red: #e05555; --green: #5aad7a; --input-bg: #2a2a2a; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
-
-        /* HEADER MOBILE */
-        .mobile-header { display: none; background: #111; padding: 15px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1000; justify-content: space-between; align-items: center; }
-        .menu-toggle { background: none; border: none; color: var(--accent); font-size: 24px; cursor: pointer; }
-
-        /* SIDEBAR ADATTIVA */
-        .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 24px; position: fixed; height: 100vh; z-index: 1100; transition: 0.3s; }
-        .main { margin-left: 260px; padding: 25px; width: calc(100% - 260px); transition: 0.3s; }
-
-        @media (max-width: 900px) {
-            .mobile-header { display: flex; }
-            .sidebar { left: -260px; width: 260px; }
-            .sidebar.open { left: 0; }
-            .main { margin-left: 0; width: 100%; padding: 15px; }
-            .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1050; }
-            .overlay.active { display: block; }
-        }
-
-        .nav-item { padding: 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); margin-bottom: 8px; font-weight: 500; }
-        .nav-item.active { background: rgba(232,201,122,0.1); color: var(--accent); }
-
-        /* CARDS E INPUT */
-        .content-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 18px; margin-bottom: 20px; }
-        input { background: var(--input-bg); border: 1px solid #444; padding: 14px; border-radius: 8px; color: white; width: 100%; margin-bottom: 12px; font-size: 16px; -webkit-appearance: none; }
-        input:focus { border-color: var(--accent); outline: none; }
-        
-        .btn-add { background: var(--accent); color: black; border: none; padding: 15px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; }
-        
-        /* TABELLA SCORREVOLE PER MOBILE */
-        .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; min-width: 300px; }
-        td { padding: 12px 5px; border-bottom: 1px solid #1f1f1f; }
-        
-        .action-btn { background: none; border: none; font-size: 20px; padding: 8px; cursor: pointer; }
-        
-        #reader { width: 100%; max-width: 400px; margin: 0 auto 20px auto; display: none; border: 2px solid var(--accent); }
+        body { background-color: #F5F5F7; font-family: -apple-system, system-ui, sans-serif; }
+        .apple-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.3); }
+        .input-apple { border-radius: 12px; border: 1px solid #d1d1d6; padding: 10px; outline: none; transition: all 0.2s; }
+        .input-apple:focus { border-color: #0071e3; box-shadow: 0 0 0 4px rgba(0,113,227,0.1); }
+        @media print { .no-print { display: none; } #printArea { display: block !important; } }
     </style>
 </head>
-<body>
+<body class="p-4 md:p-10">
 
-    <div class="mobile-header">
-        <div style="font-weight: 700; color: var(--accent);">ARCHIVIO PRO</div>
-        <button class="menu-toggle" onclick="toggleMenu()">☰</button>
-    </div>
-
-    <div class="overlay" onclick="toggleMenu()"></div>
-
-    <div class="sidebar" id="sidebar">
-        <div style="font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 30px;" class="pc-only">ARCHIVIO PRO</div>
-        <div class="nav-item active" onclick="nav('dashboard')">🏠 Dashboard</div>
-        <div class="nav-item" onclick="nav('lista')">📂 Registro</div>
-        <div class="nav-item" onclick="nav('qrpage')">🖨️ Etichette QR</div>
-        <div class="nav-item" onclick="nav('backup')">💾 Gestione Dati</div>
-    </div>
-
-    <div class="main">
-        <div id="page-dashboard" class="page">
-            <h2 style="margin-bottom:20px">Riepilogo</h2>
-            <div class="content-card">Totale: <h1 id="st-tot">0</h1></div>
-            <div class="content-card" style="border-left: 5px solid var(--red)">Fuori: <h1 id="st-fuori">0</h1></div>
+<div class="max-w-6xl mx-auto no-print">
+    <header class="flex justify-between items-center mb-10">
+        <h1 class="text-3xl font-bold tracking-tight text-gray-900">Gestione Archivio</h1>
+        <div class="flex gap-2">
+            <button onclick="document.getElementById('fileImport').click()" class="bg-white border text-sm px-4 py-2 rounded-full shadow-sm hover:bg-gray-50">Importa Excel</button>
+            <input type="file" id="fileImport" class="hidden" accept=".xlsx" onchange="importExcel(event)">
+            <button onclick="exportExcel()" class="bg-black text-white text-sm px-4 py-2 rounded-full hover:opacity-80">Scarica Excel</button>
         </div>
+    </header>
 
-        <div id="page-lista" class="page" style="display:none">
-            <button class="btn-add" style="margin-bottom:15px; background:#333; color:white; border:1px solid var(--accent)" onclick="startScan()">📷 SCANSIONA QR</button>
-            <div id="reader"></div>
-            
-            <div class="content-card">
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="in-num" placeholder="Num.">
-                    <input type="text" id="in-anno" placeholder="Anno">
-                </div>
-                <input type="text" id="in-rip" placeholder="Ripiano / Posizione">
-                <button class="btn-add" id="btn-main" onclick="aggiungi()">Salva</button>
-            </div>
-
-            <div class="content-card">
-                <input type="text" id="search" placeholder="🔍 Cerca..." onkeyup="filtra()">
-                <div class="table-container">
-                    <table><tbody id="main-table"></tbody></table>
-                </div>
-            </div>
-        </div>
-
-        <div id="page-qrpage" class="page" style="display:none">
-            <h2>Etichette QR</h2>
-            <div id="lista-qr-gruppi" style="margin-top:20px"></div>
-        </div>
-
-        <div id="page-backup" class="page" style="display:none">
-            <h2>Dati</h2>
-            <button class="btn-add" onclick="downloadExcel()" style="margin-bottom:15px">Esporta Excel</button>
-            <input type="file" id="fileInput" accept=".csv" style="margin-bottom:10px">
-            <button class="btn-add" style="background:#444" onclick="uploadExcel()">Importa Excel</button>
+    <div class="apple-card p-6 shadow-lg mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <input id="f_num" type="text" placeholder="N. Fascicolo" class="input-apple">
+            <input id="f_anno" type="text" placeholder="Anno" class="input-apple">
+            <input id="f_reg" type="text" placeholder="N. Registro" class="input-apple">
+            <input id="f_gruppo" type="text" placeholder="Gruppo" class="input-apple">
+            <input id="f_note" type="text" placeholder="Note" class="input-apple col-span-1 md:col-span-2">
+            <input id="f_chi" type="text" placeholder="Nome chi preleva/ripone" class="input-apple">
+            <button onclick="aggiungiFascicolo()" class="bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition">Salva Fascicolo</button>
         </div>
     </div>
 
-    <script>
-        // Inserire qui la tua configurazione Firebase (API Key, ecc.)
-        const firebaseConfig = {
-            apiKey: "AIzaSyC4PA_joHtGFRudPUYBOQAMrOgVearBt3I",
-            authDomain: "archivio-sentenze.firebaseapp.com",
-            databaseURL: "https://archivio-sentenze-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "archivio-sentenze",
-            storageBucket: "archivio-sentenze.appspot.com",
-            messagingSenderId: "139447095387",
-            appId: "1:139447095387:web:32d031468fa4c74a83af7e"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database().ref('fascicoli');
-        let currentData = [];
-        let editId = null;
-
-        db.on('value', (s) => {
-            const d = s.val();
-            currentData = d ? Object.keys(d).map(k => ({id: k, ...d[k]})) : [];
-            render();
-        });
-
-        function render() {
-            document.getElementById('st-tot').innerText = currentData.length;
-            document.getElementById('st-fuori').innerText = currentData.filter(x => x.stato === 'Prelevato').length;
-            
-            const html = currentData.slice().reverse().map(f => `
+    <div class="apple-card shadow-lg overflow-x-auto">
+        <table class="w-full text-left">
+            <thead class="bg-gray-50 border-b">
                 <tr>
-                    <td>
-                        <b>${f.numero}/${f.anno}</b><br>
-                        <small style="color:${f.stato==='Prelevato'?'var(--red)':'var(--text-dim)'}">${f.gruppo} ${f.nota?'• '+f.nota:''}</small>
-                    </td>
-                    <td style="text-align:right">
-                        <button class="action-btn" onclick="toggleStato('${f.id}','${f.stato}')">🤝</button>
-                        <button class="action-btn" onclick="preparaModifica('${f.id}','${f.numero}','${f.anno}','${f.gruppo}')">✏️</button>
-                        <button class="action-btn" onclick="elimina('${f.id}')">🗑️</button>
-                    </td>
-                </tr>`).join('');
-            document.getElementById('main-table').innerHTML = html;
-        }
+                    <th class="p-4">Fascicolo/Anno</th>
+                    <th class="p-4">Registro</th>
+                    <th class="p-4">Gruppo</th>
+                    <th class="p-4">Note</th>
+                    <th class="p-4 text-right">Azioni</th>
+                </tr>
+            </thead>
+            <tbody id="tabellaCorpo"></tbody>
+        </table>
+    </div>
+</div>
 
-        // --- GESTIONE MENU MOBILE ---
-        function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.querySelector('.overlay').classList.toggle('active');
-        }
+<div id="printArea" class="hidden text-center p-20">
+    <h1 id="printTitle" class="text-5xl font-bold mb-4"></h1>
+    <div id="qrcode" class="flex justify-center my-10"></div>
+    <p class="text-2xl text-gray-600">Archivio Digitale - Etichetta Gruppo</p>
+</div>
 
-        function nav(p) {
-            document.querySelectorAll('.page').forEach(page => page.style.display = 'none');
-            document.getElementById('page-' + p).style.display = 'block';
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            if(window.innerWidth <= 900) toggleMenu();
-        }
+<script>
+    let archivio = JSON.parse(localStorage.getItem('mioArchivio')) || [];
 
-        // --- FUNZIONI OPERATIVE ---
-        function aggiungi() {
-            const n = document.getElementById('in-num').value, a = document.getElementById('in-anno').value, r = document.getElementById('in-rip').value;
-            if(!n || !a) return alert("Compila i campi!");
-            if(editId) {
-                db.child(editId).update({ numero: n, anno: a, gruppo: r || "Generale" });
-                editId = null;
-                document.getElementById('btn-main').innerText = "Salva Fascicolo";
-            } else {
-                db.push({ numero: n, anno: a, gruppo: r || "Generale", stato: "In sede", data: new Date().toISOString() });
-            }
-            document.getElementById('in-num').value = ""; document.getElementById('in-anno').value = "";
-        }
+    function aggiungiFascicolo() {
+        const f = {
+            id: Date.now(),
+            numero: document.getElementById('f_num').value,
+            anno: document.getElementById('f_anno').value,
+            registro: document.getElementById('f_reg').value,
+            gruppo: document.getElementById('f_gruppo').value,
+            note: document.getElementById('f_note').value,
+            utente: document.getElementById('f_chi').value,
+            data: new Date().toLocaleDateString()
+        };
+        if(!f.numero) return alert("Inserisci almeno il numero!");
+        archivio.push(f);
+        salvaERicarica();
+    }
 
-        function preparaModifica(id, n, a, r) {
-            editId = id;
-            document.getElementById('in-num').value = n;
-            document.getElementById('in-anno').value = a;
-            document.getElementById('in-rip').value = r;
-            document.getElementById('btn-main').innerText = "CONFERMA";
-            window.scrollTo(0,0);
-        }
-
-        function elimina(id) { if(confirm("Eliminare?")) db.child(id).remove(); }
-
-        function toggleStato(id, attuale) {
-            if(attuale === "In sede") {
-                const chi = prompt("Chi preleva?");
-                if(chi) db.child(id).update({ stato: "Prelevato", nota: chi });
-            } else {
-                db.child(id).update({ stato: "In sede", nota: "" });
+    function cancellaFascicolo(id) {
+        // DOPPIA SICUREZZA
+        if (confirm("Sicuro di voler cancellare? (1/2)")) {
+            const conferma = prompt("Per confermare definitivamente, scrivi ELIMINA (2/2):");
+            if (conferma === "ELIMINA") {
+                archivio = archivio.filter(item => item.id !== id);
+                salvaERicarica();
             }
         }
+    }
 
-        function filtra() {
-            const v = document.getElementById('search').value.toLowerCase();
-            document.querySelectorAll('#main-table tr').forEach(tr => {
-                tr.style.display = tr.innerText.toLowerCase().includes(v) ? '' : 'none';
-            });
+    function modificaFascicolo(id) {
+        if (confirm("Vuoi modificare questo fascicolo? (1/2)")) {
+            const conferma = prompt("Scrivi MODIFICA per procedere (2/2):");
+            if (conferma === "MODIFICA") {
+                const f = archivio.find(item => item.id === id);
+                document.getElementById('f_num').value = f.numero;
+                document.getElementById('f_anno').value = f.anno;
+                document.getElementById('f_gruppo').value = f.gruppo;
+                // Rimuoviamo il vecchio per sovrascriverlo al prossimo salvataggio
+                archivio = archivio.filter(item => item.id !== id);
+                salvaERicarica();
+            }
         }
-    </script>
+    }
+
+    function stampaGruppo(nomeGruppo) {
+        document.getElementById('printTitle').innerText = "Gruppo: " + nomeGruppo;
+        document.getElementById('qrcode').innerHTML = "";
+        new QRCode(document.getElementById("qrcode"), { text: nomeGruppo, width: 300, height: 300 });
+        setTimeout(() => { window.print(); }, 500);
+    }
+
+    function salvaERicarica() {
+        localStorage.setItem('mioArchivio', JSON.stringify(archivio));
+        renderTable();
+    }
+
+    function renderTable() {
+        const corpo = document.getElementById('tabellaCorpo');
+        corpo.innerHTML = archivio.map(f => `
+            <tr class="border-b hover:bg-gray-50/50 transition">
+                <td class="p-4 font-semibold">${f.numero} / ${f.anno}</td>
+                <td class="p-4">${f.registro}</td>
+                <td class="p-4"><span class="bg-gray-200 px-2 py-1 rounded-md text-sm">${f.gruppo}</span></td>
+                <td class="p-4 text-sm text-gray-500">${f.note} <br> <small>${f.utente} - ${f.data}</small></td>
+                <td class="p-4 text-right space-x-2">
+                    <button onclick="stampaGruppo('${f.gruppo}')" class="text-blue-500 text-sm">QR</button>
+                    <button onclick="modificaFascicolo(${f.id})" class="text-gray-500 text-sm">Modifica</button>
+                    <button onclick="cancellaFascicolo(${f.id})" class="text-red-500 text-sm font-bold">X</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function exportExcel() {
+        const ws = XLSX.utils.json_to_sheet(archivio);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Archivio");
+        XLSX.writeFile(wb, "archivio_fascicoli.xlsx");
+    }
+
+    function importExcel(event) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheet = workbook.SheetNames[0];
+            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
+            archivio = jsonData;
+            salvaERicarica();
+        };
+        reader.readAsArrayBuffer(event.target.files[0]);
+    }
+
+    renderTable();
+</script>
+
 </body>
 </html>
