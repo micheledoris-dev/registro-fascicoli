@@ -7,6 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #0b0b0b; --card-bg: #161616; --accent: #e8c97a; --text-main: #f0ece0; --text-dim: #a09880; --border: #262626; --red: #e05555; --green: #5aad7a; --input-bg: #2a2a2a; }
@@ -15,24 +16,19 @@
         .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 24px; position: fixed; height: 100vh; z-index: 100; }
         .main { margin-left: 260px; padding: 25px; width: calc(100% - 260px); }
         @media (max-width: 900px) { .sidebar { display: none; } .main { margin-left: 0; width: 100%; padding: 15px; } .stats-grid { grid-template-columns: 1fr 1fr !important; } }
-        .nav-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); margin-bottom: 8px; }
-        .nav-item.active { background: rgba(232,201,122,0.1); color: var(--accent); font-weight: 600; }
+        .nav-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); margin-bottom: 8px; font-weight: 500; }
+        .nav-item.active { background: rgba(232,201,122,0.1); color: var(--accent); }
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
         .stat-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); border-left: 4px solid var(--accent); }
         .stat-val { font-size: 28px; font-weight: 700; color: white; }
         .content-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; }
-        
-        input { background: var(--input-bg); border: 1px solid #444; padding: 14px; border-radius: 8px; color: white; width: 100%; margin-bottom: 12px; font-size: 16px; transition: 0.3s; }
-        input::placeholder { color: #aaa; }
+        input { background: var(--input-bg); border: 1px solid #444; padding: 14px; border-radius: 8px; color: white; width: 100%; margin-bottom: 12px; font-size: 16px; }
         input:focus { border-color: var(--accent); outline: none; background: #333; }
-        
-        .btn-add { background: var(--accent); color: black; border: none; padding: 15px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; text-transform: uppercase; margin-bottom: 10px; }
-        .btn-sec { background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 700; transition: 0.2s; }
-        .btn-sec:hover { background: var(--accent); color: black; }
-        
+        .btn-add { background: var(--accent); color: black; border: none; padding: 15px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; text-transform: uppercase; }
+        .btn-scan { background: #333; color: white; border: 1px solid var(--accent); padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 20px; cursor: pointer; font-weight: 700; }
         table { width: 100%; border-collapse: collapse; }
-        td, th { padding: 15px 10px; border-bottom: 1px solid #1f1f1f; text-align: left; }
-        .action-btn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 5px; }
+        td { padding: 15px 10px; border-bottom: 1px solid #1f1f1f; }
+        #reader { width: 100%; border-radius: 12px; overflow: hidden; margin-bottom: 20px; display: none; border: 2px solid var(--accent); }
         #print-area { display: none; text-align: center; background: white; color: black; padding: 40px; }
         @media print { body * { visibility: hidden; } #print-area, #print-area * { visibility: visible; } #print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; } }
     </style>
@@ -42,12 +38,12 @@
         <div style="font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 40px;">ARCHIVIO PRO</div>
         <div class="nav-item active" onclick="showPage('dashboard')" id="n-dash">🏠 Dashboard</div>
         <div class="nav-item" onclick="showPage('lista')" id="n-list">📂 Registro</div>
-        <div class="nav-item" onclick="showPage('utility')" id="n-util">⚙️ Backup & Excel</div>
+        <div class="nav-item" onclick="showPage('utility')" id="n-util">⚙️ Backup & QR</div>
     </div>
 
     <div class="main">
         <div id="page-dashboard" class="page active">
-            <h1>Riepilogo Cloud</h1>
+            <h1>Riepilogo</h1>
             <div class="stats-grid">
                 <div class="stat-card"><div>Totali</div><div id="st-tot" class="stat-val">0</div></div>
                 <div class="stat-card" style="border-left-color: var(--green);"><div>In Sede</div><div id="st-sede" class="stat-val">0</div></div>
@@ -57,35 +53,37 @@
         </div>
 
         <div id="page-lista" class="page" style="display:none">
+            <button class="btn-scan" onclick="startScan()">📷 SCANSIONA QR RIPIANO</button>
+            <div id="reader"></div>
+            
             <div class="content-card">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <input type="text" id="in-num" placeholder="Numero Fascicolo">
+                    <input type="text" id="in-num" placeholder="Numero">
                     <input type="text" id="in-anno" placeholder="Anno">
                 </div>
                 <input type="text" id="in-rip" placeholder="Ripiano / Posizione">
-                <button class="btn-add" id="main-btn" onclick="aggiungi()">Salva Fascicolo</button>
+                <button class="btn-add" onclick="aggiungi()">Salva Fascicolo</button>
             </div>
+            
             <div class="content-card">
-                <input type="text" id="search" placeholder="🔍 Cerca nel registro..." onkeyup="filtra()">
+                <input type="text" id="search" placeholder="🔍 Filtra o cerca..." onkeyup="filtra()">
                 <div style="overflow-x: auto;"><table><tbody id="main-table"></tbody></table></div>
             </div>
         </div>
 
         <div id="page-utility" class="page" style="display:none">
-            <h1>Utility Excel</h1>
             <div class="content-card">
-                <h3>Esporta Dati</h3>
-                <p style="color:var(--text-dim); margin-bottom:15px; font-size:14px">Scarica l'intero database in formato CSV (compatibile con Excel).</p>
-                <button class="btn-sec" onclick="downloadExcel()">SCARICA EXCEL (.CSV)</button>
+                <h3>Esporta/Importa Excel</h3>
+                <button class="btn-add" style="background:#333; color:white; border:1px solid #555; margin-top:10px" onclick="downloadExcel()">Esporta CSV</button>
             </div>
             <div class="content-card">
-                <h3>Importa Dati</h3>
-                <p style="color:var(--text-dim); margin-bottom:15px; font-size:14px">Carica un file CSV per aggiungere più fascicoli contemporaneamente.</p>
-                <input type="file" id="fileInput" accept=".csv" style="margin-bottom:10px">
-                <button class="btn-sec" onclick="uploadExcel()">CARICA SU CLOUD</button>
+                <h3>Stampa Etichette QR</h3>
+                <div id="lista-qr-gruppi"></div>
             </div>
         </div>
     </div>
+
+    <div id="print-area"><h1 id="p-title"></h1><div id="qrcode" style="display:flex; justify-content:center; margin:30px"></div></div>
 
     <script>
         const firebaseConfig = {
@@ -101,12 +99,35 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database().ref('fascicoli');
         let currentData = [];
+        let html5QrCode;
 
         db.on('value', (snapshot) => {
             const data = snapshot.val();
             currentData = data ? Object.keys(data).map(key => ({id: key, ...data[key]})) : [];
             render(currentData);
         });
+
+        function startScan() {
+            document.getElementById('reader').style.display = 'block';
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
+                (decodedText) => {
+                    const url = new URL(decodedText);
+                    const ripiano = url.searchParams.get("cerca");
+                    if(ripiano) {
+                        document.getElementById('search').value = ripiano;
+                        filtra();
+                        stopScan();
+                    }
+                }
+            ).catch(err => alert("Errore fotocamera: " + err));
+        }
+
+        function stopScan() {
+            if(html5QrCode) {
+                html5QrCode.stop().then(() => { document.getElementById('reader').style.display = 'none'; });
+            }
+        }
 
         function aggiungi() {
             const n = document.getElementById('in-num').value, a = document.getElementById('in-anno').value, r = document.getElementById('in-rip').value;
@@ -119,45 +140,35 @@
             document.getElementById('st-tot').innerText = lista.length;
             document.getElementById('st-sede').innerText = lista.filter(x => x.stato === 'In sede').length;
             document.getElementById('st-fuori').innerText = lista.filter(x => x.stato === 'Prelevato').length;
-            document.getElementById('st-gruppi').innerText = [...new Set(lista.map(x => x.gruppo))].length;
+            const gruppi = [...new Set(lista.map(x => x.gruppo))];
+            document.getElementById('st-gruppi').innerText = gruppi.length;
             
             const html = lista.slice().reverse().map(f => `
                 <tr>
-                    <td><b>${f.numero}/${f.anno}</b><br><small>${f.gruppo} ${f.nota?'• '+f.nota:''}</small></td>
+                    <td><b>${f.numero}/${f.anno}</b><br><small>${f.gruppo}</small></td>
                     <td><span style="color:${f.stato==='In sede'?'var(--green)':'var(--red)'}">${f.stato}</span></td>
-                    <td><button class="action-btn" onclick="db.child('${f.id}').remove()">🗑️</button></td>
+                    <td><button style="background:none; border:none; cursor:pointer" onclick="db.child('${f.id}').remove()">🗑️</button></td>
                 </tr>`).join('');
             document.getElementById('main-table').innerHTML = html;
+
+            document.getElementById('lista-qr-gruppi').innerHTML = gruppi.map(g => `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+                    <span>${g}</span><button class="btn-add" style="width:auto; padding:5px 15px" onclick="stampa('${g}')">STAMPA</button>
+                </div>`).join('');
         }
 
-        function downloadExcel() {
-            let csv = "Numero,Anno,Ripiano,Stato,Nota\n";
-            currentData.forEach(f => {
-                csv += `${f.numero},${f.anno},${f.gruppo},${f.stato},${f.nota || ""}\n`;
+        function stampa(g) {
+            document.getElementById('p-title').innerText = "Ripiano: " + g;
+            document.getElementById('qrcode').innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), { text: window.location.origin + window.location.pathname + "?cerca=" + encodeURIComponent(g), width: 200, height: 200 });
+            setTimeout(() => { window.print(); }, 500);
+        }
+
+        function filtra() {
+            const val = document.getElementById('search').value.toLowerCase();
+            document.querySelectorAll('#main-table tr').forEach(tr => {
+                tr.style.display = tr.innerText.toLowerCase().includes(val) ? '' : 'none';
             });
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.setAttribute('href', url);
-            a.setAttribute('download', 'archivio_fascicoli.csv');
-            a.click();
-        }
-
-        function uploadExcel() {
-            const file = document.getElementById('fileInput').files[0];
-            if(!file) return alert("Seleziona un file!");
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const lines = e.target.result.split("\n");
-                for(let i = 1; i < lines.length; i++) {
-                    const col = lines[i].split(",");
-                    if(col[0] && col[1]) {
-                        db.push({ numero: col[0], anno: col[1], gruppo: col[2] || "Generale", stato: col[3] || "In sede", nota: col[4] || "" });
-                    }
-                }
-                alert("Caricamento completato!");
-            };
-            reader.readAsText(file);
         }
 
         function showPage(p) {
@@ -165,6 +176,12 @@
             document.getElementById('page-' + p).style.display = 'block';
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById('n-' + p.substring(0,4)).classList.add('active');
+            stopScan();
+        }
+
+        window.onload = () => {
+            const params = new URLSearchParams(window.location.search);
+            if(params.has('cerca')) { showPage('lista'); document.getElementById('search').value = params.get('cerca'); filtra(); }
         }
     </script>
 </body>
