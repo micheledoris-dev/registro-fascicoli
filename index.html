@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #0b0b0b; --card-bg: #161616; --accent: #e8c97a; --text-main: #f0ece0; --text-dim: #a09880; --border: #262626; --red: #e05555; --green: #5aad7a; --input-bg: #222222; }
+        :root { --bg: #0b0b0b; --card-bg: #161616; --accent: #e8c97a; --text-main: #f0ece0; --text-dim: #a09880; --border: #262626; --red: #e05555; --green: #5aad7a; --input-bg: #2a2a2a; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; }
         .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 24px; position: fixed; height: 100vh; z-index: 100; }
@@ -22,34 +22,17 @@
         .stat-val { font-size: 28px; font-weight: 700; color: white; }
         .content-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; }
         
-        /* STILE CELLE INPUT MIGLIORATO */
-        input { 
-            background: var(--input-bg); 
-            border: 1px solid #333; 
-            padding: 14px; 
-            border-radius: 8px; 
-            color: white; 
-            width: 100%; 
-            margin-bottom: 12px; 
-            font-size: 16px; 
-            transition: 0.3s;
-        }
-        input::placeholder { color: #888; }
-        input:focus { 
-            border-color: var(--accent); 
-            background: #2a2a2a;
-            outline: none; 
-            box-shadow: 0 0 8px rgba(232,201,122,0.2); 
-        }
+        input { background: var(--input-bg); border: 1px solid #444; padding: 14px; border-radius: 8px; color: white; width: 100%; margin-bottom: 12px; font-size: 16px; transition: 0.3s; }
+        input::placeholder { color: #aaa; }
+        input:focus { border-color: var(--accent); outline: none; background: #333; }
         
-        .btn-add { background: var(--accent); color: black; border: none; padding: 15px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; text-transform: uppercase; }
+        .btn-add { background: var(--accent); color: black; border: none; padding: 15px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; text-transform: uppercase; margin-bottom: 10px; }
+        .btn-sec { background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 700; transition: 0.2s; }
+        .btn-sec:hover { background: var(--accent); color: black; }
+        
         table { width: 100%; border-collapse: collapse; }
         td, th { padding: 15px 10px; border-bottom: 1px solid #1f1f1f; text-align: left; }
-        .badge { padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-        .badge-fuori { background: rgba(224,85,85,0.15); color: var(--red); }
-        .badge-sede { background: rgba(90,173,122,0.15); color: var(--green); }
-        .action-btn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 5px; filter: grayscale(1); }
-        .action-btn:hover { filter: grayscale(0); transform: scale(1.1); }
+        .action-btn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 5px; }
         #print-area { display: none; text-align: center; background: white; color: black; padding: 40px; }
         @media print { body * { visibility: hidden; } #print-area, #print-area * { visibility: visible; } #print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; } }
     </style>
@@ -57,10 +40,11 @@
 <body>
     <div class="sidebar">
         <div style="font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 40px;">ARCHIVIO PRO</div>
-        <div class="nav-item active" id="n-dash" onclick="showPage('dashboard')">🏠 Dashboard</div>
-        <div class="nav-item" id="n-list" onclick="showPage('lista')">📂 Registro Fascicoli</div>
-        <div class="nav-item" id="n-qr" onclick="showPage('qr-sect')">🖨️ Etichette QR</div>
+        <div class="nav-item active" onclick="showPage('dashboard')" id="n-dash">🏠 Dashboard</div>
+        <div class="nav-item" onclick="showPage('lista')" id="n-list">📂 Registro</div>
+        <div class="nav-item" onclick="showPage('utility')" id="n-util">⚙️ Backup & Excel</div>
     </div>
+
     <div class="main">
         <div id="page-dashboard" class="page active">
             <h1>Riepilogo Cloud</h1>
@@ -70,8 +54,8 @@
                 <div class="stat-card" style="border-left-color: var(--red);"><div>Fuori</div><div id="st-fuori" class="stat-val">0</div></div>
                 <div class="stat-card" style="border-left-color: #5a8fad;"><div>Ripiani</div><div id="st-gruppi" class="stat-val">0</div></div>
             </div>
-            <div class="content-card"><h3>Movimenti Recenti</h3><table id="mini-table"></table></div>
         </div>
+
         <div id="page-lista" class="page" style="display:none">
             <div class="content-card">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -79,19 +63,29 @@
                     <input type="text" id="in-anno" placeholder="Anno">
                 </div>
                 <input type="text" id="in-rip" placeholder="Ripiano / Posizione">
-                <button class="btn-add" id="main-btn" onclick="aggiungi()">Aggiungi al Cloud</button>
+                <button class="btn-add" id="main-btn" onclick="aggiungi()">Salva Fascicolo</button>
             </div>
             <div class="content-card">
-                <input type="text" id="search" placeholder="🔍 Cerca fascicolo, ripiano o dottore...">
+                <input type="text" id="search" placeholder="🔍 Cerca nel registro..." onkeyup="filtra()">
                 <div style="overflow-x: auto;"><table><tbody id="main-table"></tbody></table></div>
             </div>
         </div>
-        <div id="page-qr-sect" class="page" style="display:none">
-            <h1>Etichette QR</h1>
-            <div id="lista-qr-gruppi"></div>
+
+        <div id="page-utility" class="page" style="display:none">
+            <h1>Utility Excel</h1>
+            <div class="content-card">
+                <h3>Esporta Dati</h3>
+                <p style="color:var(--text-dim); margin-bottom:15px; font-size:14px">Scarica l'intero database in formato CSV (compatibile con Excel).</p>
+                <button class="btn-sec" onclick="downloadExcel()">SCARICA EXCEL (.CSV)</button>
+            </div>
+            <div class="content-card">
+                <h3>Importa Dati</h3>
+                <p style="color:var(--text-dim); margin-bottom:15px; font-size:14px">Carica un file CSV per aggiungere più fascicoli contemporaneamente.</p>
+                <input type="file" id="fileInput" accept=".csv" style="margin-bottom:10px">
+                <button class="btn-sec" onclick="uploadExcel()">CARICA SU CLOUD</button>
+            </div>
         </div>
     </div>
-    <div id="print-area"><h1 id="p-title"></h1><div id="qrcode" style="display:flex; justify-content:center; margin:30px"></div></div>
 
     <script>
         const firebaseConfig = {
@@ -106,82 +100,71 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database().ref('fascicoli');
-        let editingId = null;
+        let currentData = [];
 
         db.on('value', (snapshot) => {
             const data = snapshot.val();
-            const lista = data ? Object.keys(data).map(key => ({id: key, ...data[key]})) : [];
-            render(lista);
+            currentData = data ? Object.keys(data).map(key => ({id: key, ...data[key]})) : [];
+            render(currentData);
         });
 
         function aggiungi() {
             const n = document.getElementById('in-num').value, a = document.getElementById('in-anno').value, r = document.getElementById('in-rip').value;
-            if(!n || !a) return alert("Dati obbligatori!");
-            if(editingId) {
-                db.child(editingId).update({ numero: n, anno: a, gruppo: r || "Generale" });
-                editingId = null;
-                document.getElementById('main-btn').innerText = "Aggiungi al Cloud";
-            } else {
-                db.push({ numero: n, anno: a, gruppo: r || "Generale", stato: "In sede", data: new Date().toISOString() });
-            }
-            document.getElementById('in-num').value = ""; document.getElementById('in-anno').value = ""; document.getElementById('in-rip').value = "";
-        }
-
-        function preparaModifica(id, n, a, r) {
-            editingId = id;
-            document.getElementById('in-num').value = n;
-            document.getElementById('in-anno').value = a;
-            document.getElementById('in-rip').value = r;
-            document.getElementById('main-btn').innerText = "Conferma Modifica";
-            window.scrollTo(0,0);
-        }
-
-        function elimina(id) { if(confirm("Eliminare?")) db.child(id).remove(); }
-
-        function toggleStato(id, attuale) {
-            const nuovo = attuale === "In sede" ? "Prelevato" : "In sede";
-            let nota = nuovo === "Prelevato" ? prompt("A chi?") : "";
-            if(nuovo === "Prelevato" && !nota) return;
-            db.child(id).update({ stato: nuovo, nota: nota || "" });
+            if(!n || !a) return alert("Inserire Numero e Anno!");
+            db.push({ numero: n, anno: a, gruppo: r || "Generale", stato: "In sede", data: new Date().toISOString() });
+            document.getElementById('in-num').value = ""; document.getElementById('in-anno').value = "";
         }
 
         function render(lista) {
             document.getElementById('st-tot').innerText = lista.length;
             document.getElementById('st-sede').innerText = lista.filter(x => x.stato === 'In sede').length;
             document.getElementById('st-fuori').innerText = lista.filter(x => x.stato === 'Prelevato').length;
-            const gruppi = [...new Set(lista.map(x => x.gruppo))];
-            document.getElementById('st-gruppi').innerText = gruppi.length;
-            const html = lista.reverse().map(f => `
+            document.getElementById('st-gruppi').innerText = [...new Set(lista.map(x => x.gruppo))].length;
+            
+            const html = lista.slice().reverse().map(f => `
                 <tr>
                     <td><b>${f.numero}/${f.anno}</b><br><small>${f.gruppo} ${f.nota?'• '+f.nota:''}</small></td>
-                    <td><span class="badge ${f.stato==='Prelevato'?'badge-fuori':'badge-sede'}">${f.stato}</span></td>
-                    <td style="white-space:nowrap">
-                        <button class="action-btn" onclick="toggleStato('${f.id}', '${f.stato}')">🤝</button>
-                        <button class="action-btn" onclick="preparaModifica('${f.id}', '${f.numero}', '${f.anno}', '${f.gruppo}')">✏️</button>
-                        <button class="action-btn" onclick="elimina('${f.id}')">🗑️</button>
-                    </td>
+                    <td><span style="color:${f.stato==='In sede'?'var(--green)':'var(--red)'}">${f.stato}</span></td>
+                    <td><button class="action-btn" onclick="db.child('${f.id}').remove()">🗑️</button></td>
                 </tr>`).join('');
             document.getElementById('main-table').innerHTML = html;
-            document.getElementById('mini-table').innerHTML = html.slice(0, 5);
-            document.getElementById('lista-qr-gruppi').innerHTML = gruppi.map(g => `
-                <div class="content-card" style="display:flex; justify-content:space-between; align-items:center">
-                    <b>${g}</b><button onclick="stampa('${g}')" class="btn-add" style="width:auto; padding:10px 20px">QR</button>
-                </div>`).join('');
         }
 
-        function stampa(g) {
-            document.getElementById('p-title').innerText = g;
-            document.getElementById('qrcode').innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), { text: window.location.href.split('?')[0] + "?cerca=" + encodeURIComponent(g), width: 250, height: 250 });
-            setTimeout(() => { window.print(); }, 800);
+        function downloadExcel() {
+            let csv = "Numero,Anno,Ripiano,Stato,Nota\n";
+            currentData.forEach(f => {
+                csv += `${f.numero},${f.anno},${f.gruppo},${f.stato},${f.nota || ""}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'archivio_fascicoli.csv');
+            a.click();
+        }
+
+        function uploadExcel() {
+            const file = document.getElementById('fileInput').files[0];
+            if(!file) return alert("Seleziona un file!");
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const lines = e.target.result.split("\n");
+                for(let i = 1; i < lines.length; i++) {
+                    const col = lines[i].split(",");
+                    if(col[0] && col[1]) {
+                        db.push({ numero: col[0], anno: col[1], gruppo: col[2] || "Generale", stato: col[3] || "In sede", nota: col[4] || "" });
+                    }
+                }
+                alert("Caricamento completato!");
+            };
+            reader.readAsText(file);
         }
 
         function showPage(p) {
             document.querySelectorAll('.page').forEach(page => page.style.display = 'none');
             document.getElementById('page-' + p).style.display = 'block';
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            const map = {'dashboard':'n-dash', 'lista':'n-list', 'qr-sect':'n-qr'};
-            document.getElementById(map[p]).classList.add('active');
+            document.getElementById('n-' + p.substring(0,4)).classList.add('active');
         }
     </script>
 </body>
