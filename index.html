@@ -9,80 +9,69 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #0b0b0b; --card-bg: #161616; --accent: #e8c97a; --text-main: #f0ece0; --text-dim: #a09880; --border: #262626; --red: #e05555; --green: #5aad7a; }
+        :root { --bg: #0b0b0b; --card-bg: #161616; --accent: #e8c97a; --text-main: #f0ece0; --text-dim: #a09880; --border: #262626; --red: #e05555; --green: #5aad7a; --input-bg: #222222; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; -webkit-font-smoothing: antialiased; }
-        
-        /* Sidebar */
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; }
         .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 24px; position: fixed; height: 100vh; z-index: 100; }
-        .main { margin-left: 260px; padding: 25px; width: calc(100% - 260px); min-height: 100vh; }
-        
-        @media (max-width: 900px) {
-            .sidebar { display: none; }
-            .main { margin-left: 0; width: 100%; padding: 15px; }
-            .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
-        }
-
-        .nav-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); margin-bottom: 8px; transition: 0.2s; }
-        .nav-item:hover { background: rgba(255,255,255,0.05); }
+        .main { margin-left: 260px; padding: 25px; width: calc(100% - 260px); }
+        @media (max-width: 900px) { .sidebar { display: none; } .main { margin-left: 0; width: 100%; padding: 15px; } .stats-grid { grid-template-columns: 1fr 1fr !important; } }
+        .nav-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); margin-bottom: 8px; }
         .nav-item.active { background: rgba(232,201,122,0.1); color: var(--accent); font-weight: 600; }
-        
-        /* Dashboard Cards */
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
         .stat-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); border-left: 4px solid var(--accent); }
-        .stat-label { color: var(--text-dim); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
         .stat-val { font-size: 28px; font-weight: 700; color: white; }
-        
-        /* Content */
         .content-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; }
-        h1 { font-size: 24px; margin-bottom: 20px; color: white; }
         
-        input { background: #0b0b0b; border: 1px solid var(--border); padding: 14px; border-radius: 8px; color: white; width: 100%; margin-bottom: 12px; font-size: 16px; transition: 0.3s; }
-        input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px rgba(232,201,122,0.1); }
+        /* STILE CELLE INPUT MIGLIORATO */
+        input { 
+            background: var(--input-bg); 
+            border: 1px solid #333; 
+            padding: 14px; 
+            border-radius: 8px; 
+            color: white; 
+            width: 100%; 
+            margin-bottom: 12px; 
+            font-size: 16px; 
+            transition: 0.3s;
+        }
+        input::placeholder { color: #888; }
+        input:focus { 
+            border-color: var(--accent); 
+            background: #2a2a2a;
+            outline: none; 
+            box-shadow: 0 0 8px rgba(232,201,122,0.2); 
+        }
         
-        .btn-add { background: var(--accent); color: black; border: none; padding: 15px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s; }
-        .btn-add:active { transform: scale(0.98); }
-        
-        /* Table */
+        .btn-add { background: var(--accent); color: black; border: none; padding: 15px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; text-transform: uppercase; }
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; color: var(--text-dim); font-size: 12px; text-transform: uppercase; padding: 10px; border-bottom: 1px solid var(--border); }
-        td { padding: 15px 10px; border-bottom: 1px solid #1f1f1f; }
+        td, th { padding: 15px 10px; border-bottom: 1px solid #1f1f1f; text-align: left; }
         .badge { padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; }
         .badge-fuori { background: rgba(224,85,85,0.15); color: var(--red); }
         .badge-sede { background: rgba(90,173,122,0.15); color: var(--green); }
-        
-        .action-btn { background: none; border: none; cursor: pointer; font-size: 18px; filter: grayscale(1); transition: 0.2s; padding: 5px; }
-        .action-btn:hover { filter: grayscale(0); transform: scale(1.2); }
-
-        /* Print Mode */
+        .action-btn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 5px; filter: grayscale(1); }
+        .action-btn:hover { filter: grayscale(0); transform: scale(1.1); }
         #print-area { display: none; text-align: center; background: white; color: black; padding: 40px; }
         @media print { body * { visibility: hidden; } #print-area, #print-area * { visibility: visible; } #print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; } }
     </style>
 </head>
 <body>
-
     <div class="sidebar">
-        <div style="font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 40px; letter-spacing: -1px;">ARCHIVIO PRO</div>
+        <div style="font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 40px;">ARCHIVIO PRO</div>
         <div class="nav-item active" id="n-dash" onclick="showPage('dashboard')">🏠 Dashboard</div>
         <div class="nav-item" id="n-list" onclick="showPage('lista')">📂 Registro Fascicoli</div>
         <div class="nav-item" id="n-qr" onclick="showPage('qr-sect')">🖨️ Etichette QR</div>
     </div>
-
     <div class="main">
         <div id="page-dashboard" class="page active">
             <h1>Riepilogo Cloud</h1>
             <div class="stats-grid">
-                <div class="stat-card"><div class="stat-label">Totali</div><div id="st-tot" class="stat-val">0</div></div>
-                <div class="stat-card" style="border-left-color: var(--green);"><div class="stat-label">In Sede</div><div id="st-sede" class="stat-val">0</div></div>
-                <div class="stat-card" style="border-left-color: var(--red);"><div class="stat-label">Prelevati</div><div id="st-fuori" class="stat-val">0</div></div>
-                <div class="stat-card" style="border-left-color: #5a8fad;"><div class="stat-label">Ripiani</div><div id="st-gruppi" class="stat-val">0</div></div>
+                <div class="stat-card"><div>Totali</div><div id="st-tot" class="stat-val">0</div></div>
+                <div class="stat-card" style="border-left-color: var(--green);"><div>In Sede</div><div id="st-sede" class="stat-val">0</div></div>
+                <div class="stat-card" style="border-left-color: var(--red);"><div>Fuori</div><div id="st-fuori" class="stat-val">0</div></div>
+                <div class="stat-card" style="border-left-color: #5a8fad;"><div>Ripiani</div><div id="st-gruppi" class="stat-val">0</div></div>
             </div>
-            <div class="content-card">
-                <h3 style="margin-bottom:15px">Movimenti Recenti</h3>
-                <table id="mini-table"></table>
-            </div>
+            <div class="content-card"><h3>Movimenti Recenti</h3><table id="mini-table"></table></div>
         </div>
-
         <div id="page-lista" class="page" style="display:none">
             <div class="content-card">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -92,32 +81,19 @@
                 <input type="text" id="in-rip" placeholder="Ripiano / Posizione">
                 <button class="btn-add" id="main-btn" onclick="aggiungi()">Aggiungi al Cloud</button>
             </div>
-            
             <div class="content-card">
-                <input type="text" id="search" placeholder="🔍 Cerca fascicolo, ripiano o dottore..." onkeyup="filtra()">
-                <div style="overflow-x: auto;">
-                    <table>
-                        <thead><tr><th>Fascicolo</th><th>Stato</th><th>Azioni</th></tr></thead>
-                        <tbody id="main-table"></tbody>
-                    </table>
-                </div>
+                <input type="text" id="search" placeholder="🔍 Cerca fascicolo, ripiano o dottore...">
+                <div style="overflow-x: auto;"><table><tbody id="main-table"></tbody></table></div>
             </div>
         </div>
-
         <div id="page-qr-sect" class="page" style="display:none">
-            <h1>Generazione Etichette</h1>
+            <h1>Etichette QR</h1>
             <div id="lista-qr-gruppi"></div>
         </div>
     </div>
-
-    <div id="print-area">
-        <h1 id="p-title" style="font-size: 36px; margin-bottom: 10px;"></h1>
-        <div id="qrcode" style="display:flex; justify-content:center; margin:40px auto"></div>
-        <p style="font-size: 18px;">Scansiona per vedere i fascicoli in questo ripiano</p>
-    </div>
+    <div id="print-area"><h1 id="p-title"></h1><div id="qrcode" style="display:flex; justify-content:center; margin:30px"></div></div>
 
     <script>
-        // CONFIGURAZIONE FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyC4PA_joHtGFRudPUYBOQAMrOgVearBt3I",
             authDomain: "archivio-sentenze.firebaseapp.com",
@@ -128,12 +104,10 @@
             appId: "1:139447095387:web:32d031468fa4c74a83af7e",
             measurementId: "G-9NMKDSJ6JB"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database().ref('fascicoli');
         let editingId = null;
 
-        // Recupero dati in tempo reale
         db.on('value', (snapshot) => {
             const data = snapshot.val();
             const lista = data ? Object.keys(data).map(key => ({id: key, ...data[key]})) : [];
@@ -142,13 +116,11 @@
 
         function aggiungi() {
             const n = document.getElementById('in-num').value, a = document.getElementById('in-anno').value, r = document.getElementById('in-rip').value;
-            if(!n || !a) return alert("Attenzione: Numero e Anno sono obbligatori!");
-            
+            if(!n || !a) return alert("Dati obbligatori!");
             if(editingId) {
                 db.child(editingId).update({ numero: n, anno: a, gruppo: r || "Generale" });
                 editingId = null;
                 document.getElementById('main-btn').innerText = "Aggiungi al Cloud";
-                document.getElementById('main-btn').style.background = "var(--accent)";
             } else {
                 db.push({ numero: n, anno: a, gruppo: r || "Generale", stato: "In sede", data: new Date().toISOString() });
             }
@@ -161,23 +133,15 @@
             document.getElementById('in-anno').value = a;
             document.getElementById('in-rip').value = r;
             document.getElementById('main-btn').innerText = "Conferma Modifica";
-            document.getElementById('main-btn').style.background = "var(--green)";
-            window.scrollTo({top: 0, behavior: 'smooth'});
+            window.scrollTo(0,0);
         }
 
-        function elimina(id) {
-            if(confirm("Vuoi eliminare definitivamente questo fascicolo?")) {
-                db.child(id).remove();
-            }
-        }
+        function elimina(id) { if(confirm("Eliminare?")) db.child(id).remove(); }
 
         function toggleStato(id, attuale) {
             const nuovo = attuale === "In sede" ? "Prelevato" : "In sede";
-            let nota = "";
-            if(nuovo === "Prelevato") {
-                nota = prompt("A chi viene consegnato il fascicolo?");
-                if(!nota) return;
-            }
+            let nota = nuovo === "Prelevato" ? prompt("A chi?") : "";
+            if(nuovo === "Prelevato" && !nota) return;
             db.child(id).update({ stato: nuovo, nota: nota || "" });
         }
 
@@ -187,38 +151,28 @@
             document.getElementById('st-fuori').innerText = lista.filter(x => x.stato === 'Prelevato').length;
             const gruppi = [...new Set(lista.map(x => x.gruppo))];
             document.getElementById('st-gruppi').innerText = gruppi.length;
-
             const html = lista.reverse().map(f => `
                 <tr>
-                    <td>
-                        <div style="font-weight:700; font-size:16px">${f.numero}/${f.anno}</div>
-                        <div style="font-size:12px; color:var(--text-dim)">${f.gruppo} ${f.nota ? '• '+f.nota : ''}</div>
-                    </td>
+                    <td><b>${f.numero}/${f.anno}</b><br><small>${f.gruppo} ${f.nota?'• '+f.nota:''}</small></td>
                     <td><span class="badge ${f.stato==='Prelevato'?'badge-fuori':'badge-sede'}">${f.stato}</span></td>
                     <td style="white-space:nowrap">
-                        <button class="action-btn" title="Prestito" onclick="toggleStato('${f.id}', '${f.stato}')">🤝</button>
-                        <button class="action-btn" title="Modifica" onclick="preparaModifica('${f.id}', '${f.numero}', '${f.anno}', '${f.gruppo}')">✏️</button>
-                        <button class="action-btn" title="Elimina" onclick="elimina('${f.id}')">🗑️</button>
+                        <button class="action-btn" onclick="toggleStato('${f.id}', '${f.stato}')">🤝</button>
+                        <button class="action-btn" onclick="preparaModifica('${f.id}', '${f.numero}', '${f.anno}', '${f.gruppo}')">✏️</button>
+                        <button class="action-btn" onclick="elimina('${f.id}')">🗑️</button>
                     </td>
                 </tr>`).join('');
-            
             document.getElementById('main-table').innerHTML = html;
             document.getElementById('mini-table').innerHTML = html.slice(0, 5);
-
             document.getElementById('lista-qr-gruppi').innerHTML = gruppi.map(g => `
                 <div class="content-card" style="display:flex; justify-content:space-between; align-items:center">
-                    <span style="font-weight:700; font-size:18px">${g}</span>
-                    <button onclick="stampa('${g}')" class="btn-add" style="width:auto; padding:10px 20px">Stampa QR</button>
+                    <b>${g}</b><button onclick="stampa('${g}')" class="btn-add" style="width:auto; padding:10px 20px">QR</button>
                 </div>`).join('');
         }
 
         function stampa(g) {
-            document.getElementById('p-title').innerText = "Ripiano: " + g;
+            document.getElementById('p-title').innerText = g;
             document.getElementById('qrcode').innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), { 
-                text: window.location.href.split('?')[0] + "?cerca=" + encodeURIComponent(g), 
-                width: 250, height: 250, colorDark : "#000000", colorLight : "#ffffff" 
-            });
+            new QRCode(document.getElementById("qrcode"), { text: window.location.href.split('?')[0] + "?cerca=" + encodeURIComponent(g), width: 250, height: 250 });
             setTimeout(() => { window.print(); }, 800);
         }
 
@@ -228,22 +182,6 @@
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             const map = {'dashboard':'n-dash', 'lista':'n-list', 'qr-sect':'n-qr'};
             document.getElementById(map[p]).classList.add('active');
-        }
-
-        function filtra() {
-            const val = document.getElementById('search').value.toLowerCase();
-            document.querySelectorAll('#main-table tr').forEach(tr => {
-                tr.style.display = tr.innerText.toLowerCase().includes(val) ? '' : 'none';
-            });
-        }
-
-        window.onload = () => {
-            const params = new URLSearchParams(window.location.search);
-            if(params.has('cerca')) { 
-                showPage('lista'); 
-                document.getElementById('search').value = params.get('cerca'); 
-                filtra(); 
-            }
         }
     </script>
 </body>
