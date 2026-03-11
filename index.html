@@ -4,58 +4,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archivio Fascicoli Pro - Fix</title>
+    <title>Archivio Sentenze Cloud</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.1/qrcode.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        body { background-color: #F5F5F7; font-family: -apple-system, sans-serif; }
-        .apple-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.4); }
-        /* Fix per il Modal */
+        body { background-color: #F2F2F7; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .apple-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); border-radius: 20px; border: 1px solid rgba(0,0,0,0.05); }
         #modal { display: none; }
         #modal.active { display: flex !important; }
         @media print { .no-print { display: none !important; } #print-area { display: block !important; } }
-        #print-area { display: none; text-align: center; padding: 50px; }
+        #print-area { display: none; text-align: center; padding: 40px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .online { background-color: #34C759; box-shadow: 0 0 8px #34C759; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
 <div class="max-w-6xl mx-auto no-print">
-    <header class="flex justify-between items-center mb-8">
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900">📁 Archivio Digitale</h1>
-        <div class="flex gap-2">
-            <button onclick="document.getElementById('file-in').click()" class="bg-white border px-4 py-2 rounded-xl text-sm shadow-sm hover:bg-gray-50 transition">Importa Excel</button>
-            <button onclick="exportExcel()" class="bg-white border px-4 py-2 rounded-xl text-sm shadow-sm hover:bg-gray-50 transition">Esporta Excel</button>
-            <button onclick="openModal()" class="bg-blue-600 text-white px-6 py-2 rounded-xl text-sm font-semibold shadow-md hover:bg-blue-700 transition">＋ Nuovo</button>
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-gray-900">📁 Archivio Sentenze</h1>
+            <div class="flex items-center mt-1">
+                <span class="status-dot online"></span>
+                <span id="sync-text" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sincronizzato Cloud</span>
+            </div>
+        </div>
+        <div class="flex gap-2 w-full md:w-auto">
+            <button onclick="document.getElementById('file-in').click()" class="flex-1 md:flex-none bg-white border px-4 py-2 rounded-xl text-sm font-medium shadow-sm hover:bg-gray-50 transition">Importa</button>
+            <button onclick="exportExcel()" class="flex-1 md:flex-none bg-white border px-4 py-2 rounded-xl text-sm font-medium shadow-sm hover:bg-gray-50 transition">Esporta</button>
+            <button onclick="openModal()" class="flex-1 md:flex-none bg-blue-600 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg hover:bg-blue-700 transition">＋ Nuovo</button>
         </div>
     </header>
 
     <div class="apple-card p-4 mb-6 shadow-sm">
-        <input type="text" id="search" placeholder="Cerca numero, anno o posizione..." onkeyup="filter()" class="w-full bg-transparent border-none outline-none text-lg placeholder-gray-400">
+        <input type="text" id="search" placeholder="Cerca per numero, anno o posizione..." onkeyup="filter()" class="w-full bg-transparent border-none outline-none text-lg placeholder-gray-300">
     </div>
 
-    <div class="apple-card overflow-hidden shadow-lg border border-gray-200">
-        <table class="w-full text-left">
-            <thead class="bg-gray-50 border-b border-gray-100">
-                <tr>
-                    <th class="p-4 text-xs font-bold text-gray-400 uppercase">Fascicolo</th>
-                    <th class="p-4 text-xs font-bold text-gray-400 uppercase">Registro</th>
-                    <th class="p-4 text-xs font-bold text-gray-400 uppercase">Gruppo / Posizione</th>
-                    <th class="p-4 text-xs font-bold text-gray-400 uppercase">Stato</th>
-                    <th class="p-4 text-xs font-bold text-gray-400 uppercase text-right">Azioni</th>
-                </tr>
-            </thead>
-            <tbody id="table-body" class="divide-y divide-gray-100 bg-white/50"></tbody>
-        </table>
+    <div class="apple-card overflow-hidden shadow-xl border border-gray-100">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50/50 border-b border-gray-100">
+                    <tr>
+                        <th class="p-4 text-xs font-bold text-gray-400 uppercase">Fascicolo</th>
+                        <th class="p-4 text-xs font-bold text-gray-400 uppercase">Registro</th>
+                        <th class="p-4 text-xs font-bold text-gray-400 uppercase">Gruppo / Posizione</th>
+                        <th class="p-4 text-xs font-bold text-gray-400 uppercase">Stato</th>
+                        <th class="p-4 text-xs font-bold text-gray-400 uppercase text-right">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body" class="divide-y divide-gray-100 bg-white/50 text-sm">
+                    <tr><td colspan="5" class="p-10 text-center text-gray-400 italic">Caricamento database...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
-<div id="modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 items-center justify-center p-4">
-    <div class="bg-white p-8 rounded-[30px] w-full max-w-md shadow-2xl">
+<div id="modal" class="fixed inset-0 bg-black/30 backdrop-blur-md z-50 items-center justify-center p-4">
+    <div class="bg-white p-6 md:p-8 rounded-[30px] w-full max-w-md shadow-2xl">
         <h2 id="m-title" class="text-2xl font-bold mb-6 text-gray-800">Dettagli Fascicolo</h2>
-        
         <div class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -67,167 +80,109 @@
                     <input type="text" id="m-anno" class="w-full p-3 bg-gray-50 rounded-xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
             </div>
-            
             <div>
-                <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Numero Registro</label>
+                <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Registro</label>
                 <input type="text" id="m-reg" class="w-full p-3 bg-gray-50 rounded-xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
-
             <div>
-                <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Gruppo (Ripiano/Fila)</label>
+                <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Gruppo (Posizione Fisica)</label>
                 <input type="text" id="m-gruppo" class="w-full p-3 bg-gray-50 rounded-xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
-
             <div>
-                <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Stato attuale</label>
+                <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Stato Operativo</label>
                 <input type="text" id="m-stato" class="w-full p-3 bg-gray-50 rounded-xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
         </div>
-
         <div class="flex justify-end gap-3 mt-8">
-            <button onclick="closeModal()" class="px-5 py-2 text-sm font-semibold text-gray-400 hover:text-gray-600 transition">Annulla</button>
-            <button onclick="save()" class="bg-blue-600 text-white px-8 py-2 rounded-xl text-sm font-bold shadow-lg hover:bg-blue-700 transition">Salva</button>
+            <button onclick="closeModal()" class="px-5 py-2 text-sm font-semibold text-gray-400 hover:text-gray-600">Annulla</button>
+            <button onclick="save()" class="bg-blue-600 text-white px-8 py-2 rounded-xl text-sm font-bold shadow-lg hover:bg-blue-700">Salva Cloud</button>
         </div>
     </div>
 </div>
 
 <div id="print-area">
-    <h1 id="p-label" style="font-size: 40px; font-weight: bold; margin-bottom: 20px;"></h1>
+    <h1 id="p-label" style="font-size: 38px; font-weight: 900; margin-bottom: 20px;"></h1>
     <div id="p-qr" style="display: flex; justify-content: center;"></div>
+    <p style="margin-top: 20px; font-size: 14px; color: #666;">Scansiona per localizzare il gruppo</p>
 </div>
 
 <input type="file" id="file-in" hidden onchange="importXLS(event)">
 
 <script>
-    let db = JSON.parse(localStorage.getItem('db_archivio_v6')) || [];
-    let currentEditId = null;
+    // --- CONFIGURAZIONE FIREBASE ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyC4PA_joHtGFRudPUYBOQAMrOgVearBt3I",
+      authDomain: "archivio-sentenze.firebaseapp.com",
+      databaseURL: "https://archivio-sentenze-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "archivio-sentenze",
+      storageBucket: "archivio-sentenze.firebasestorage.app",
+      messagingSenderId: "139447095387",
+      appId: "1:139447095387:web:32d031468fa4c74a83af7e",
+      measurementId: "G-9NMKDSJ6JB"
+    };
+
+    // Inizializzazione
+    firebase.initializeApp(firebaseConfig);
+    const dbRef = firebase.database().ref('sentenze');
+    let fullData = [];
+    let currentKey = null;
+
+    // Sincronizzazione Realtime
+    dbRef.on('value', (snapshot) => {
+        const val = snapshot.val();
+        fullData = val ? Object.keys(val).map(k => ({...val[k], fbKey: k})) : [];
+        render();
+        document.getElementById('sync-text').innerText = `Sincronizzato Cloud (${fullData.length})`;
+    });
 
     function render() {
         const body = document.getElementById('table-body');
-        if (db.length === 0) {
-            body.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-gray-400 italic">Nessun fascicolo presente. Clicca su Nuovo o Importa Excel.</td></tr>';
+        if (fullData.length === 0) {
+            body.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-gray-400 italic">Nessun dato presente nel Cloud. Importa un file o aggiungi nuovo.</td></tr>';
             return;
         }
-        body.innerHTML = db.map(i => `
-            <tr class="hover:bg-blue-50/30 transition">
+        body.innerHTML = fullData.map(i => `
+            <tr class="hover:bg-blue-50/50 transition border-b border-gray-50 last:border-0">
                 <td class="p-4 font-bold text-blue-600">${i.num} / ${i.anno}</td>
-                <td class="p-4 text-gray-600 uppercase text-xs font-semibold">${i.reg || '-'}</td>
-                <td class="p-4 font-medium text-gray-800">${i.gruppo}</td>
-                <td class="p-4"><span class="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-[10px] font-black uppercase tracking-wider border border-green-200">${i.stato || 'In archivio'}</span></td>
-                <td class="p-4 text-right space-x-2">
-                    <button onclick="doPrint('${i.gruppo}')" class="text-[10px] font-bold bg-gray-100 px-3 py-1 rounded-full hover:bg-blue-600 hover:text-white transition uppercase">QR</button>
-                    <button onclick="secure('edit', ${i.id})" class="p-2 text-gray-300 hover:text-blue-600 transition">✏️</button>
-                    <button onclick="secure('del', ${i.id})" class="p-2 text-gray-300 hover:text-red-600 transition">🗑️</button>
+                <td class="p-4 text-gray-500 font-medium">${i.reg || '-'}</td>
+                <td class="p-4 font-semibold text-gray-800">${i.gruppo}</td>
+                <td class="p-4">
+                    <span class="px-2 py-1 bg-green-100 text-green-700 rounded-md text-[10px] font-black uppercase tracking-tighter">
+                        ${i.stato || 'Archiviato'}
+                    </span>
+                </td>
+                <td class="p-4 text-right space-x-1">
+                    <button onclick="doPrint('${i.gruppo}')" class="text-[10px] font-bold bg-gray-100 px-3 py-1.5 rounded-lg hover:bg-black hover:text-white transition uppercase">QR</button>
+                    <button onclick="openModal('${i.fbKey}')" class="p-2 text-gray-300 hover:text-blue-600 transition">✏️</button>
+                    <button onclick="secureDelete('${i.fbKey}')" class="p-2 text-gray-300 hover:text-red-600 transition">🗑️</button>
                 </td>
             </tr>
         `).join('');
     }
 
-    function openModal(id = null) {
-        currentEditId = id;
-        document.getElementById('m-title').innerText = id ? "Modifica Fascicolo" : "Nuovo Fascicolo";
-        
-        if(id) {
-            let f = db.find(x => x.id === id);
-            document.getElementById('m-num').value = f.num;
-            document.getElementById('m-anno').value = f.anno;
-            document.getElementById('m-reg').value = f.reg;
-            document.getElementById('m-gruppo').value = f.gruppo;
-            document.getElementById('m-stato').value = f.stato;
-        } else {
-            // Pulisci tutto per il nuovo inserimento
-            document.getElementById('m-num').value = "";
-            document.getElementById('m-anno').value = "";
-            document.getElementById('m-reg').value = "";
-            document.getElementById('m-gruppo').value = "";
-            document.getElementById('m-stato').value = "In archivio";
-        }
-        document.getElementById('modal').classList.add('active');
-    }
-
-    function closeModal() {
-        document.getElementById('modal').classList.remove('active');
-    }
-
     function save() {
-        const num = document.getElementById('m-num').value;
-        if(!num) { alert("Inserisci almeno il numero!"); return; }
-
-        let obj = {
-            id: currentEditId || Date.now(),
-            num: num,
+        const obj = {
+            num: document.getElementById('m-num').value,
             anno: document.getElementById('m-anno').value,
             reg: document.getElementById('m-reg').value,
             gruppo: document.getElementById('m-gruppo').value,
-            stato: document.getElementById('m-stato').value
+            stato: document.getElementById('m-stato').value || "In archivio"
         };
+        if(!obj.num || !obj.anno) return alert("Numero e Anno sono obbligatori!");
 
-        if(currentEditId) {
-            db = db.map(x => x.id === currentEditId ? obj : x);
-        } else {
-            db.push(obj);
-        }
+        if(currentKey) dbRef.child(currentKey).set(obj);
+        else dbRef.push(obj);
         
-        sync();
         closeModal();
     }
 
-    function secure(action, id) {
-        if(action === 'del') {
-            if(confirm("Vuoi eliminare questo fascicolo?")) {
-                let p = prompt("Scrivi CONFERMA per eliminare:");
-                if(p === "CONFERMA") { db = db.filter(x => x.id !== id); sync(); }
-            }
-        } else {
-            openModal(id);
+    function secureDelete(key) {
+        if(confirm("Vuoi eliminare definitivamente questa riga dal Cloud?")) {
+            let p = prompt("Scrivi ELIMINA per confermare:");
+            if(p === "ELIMINA") dbRef.child(key).remove();
         }
     }
 
-    function sync() { 
-        localStorage.setItem('db_archivio_v6', JSON.stringify(db)); 
-        render(); 
-    }
-
-    function filter() {
-        let v = document.getElementById('search').value.toLowerCase();
-        let rows = document.querySelectorAll('#table-body tr');
-        rows.forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none');
-    }
-
-    function doPrint(g) {
-        document.getElementById('p-label').innerText = g;
-        document.getElementById('p-qr').innerHTML = "";
-        new QRCode(document.getElementById("p-qr"), { text: g, width: 250, height: 250 });
-        setTimeout(() => window.print(), 500);
-    }
-
-    function exportExcel() {
-        let ws = XLSX.utils.json_to_sheet(db);
-        let wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Archivio");
-        XLSX.writeFile(wb, "archivio_fascicoli.xlsx");
-    }
-
-    function importXLS(e) {
-        let reader = new FileReader();
-        reader.onload = (evt) => {
-            let data = new Uint8Array(evt.target.result);
-            let workbook = XLSX.read(data, {type: 'array'});
-            let json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-            db = json.map(row => ({
-                id: Date.now() + Math.random(),
-                num: row["Numero"] || row["numero"] || "",
-                anno: row["Anno"] || row["anno"] || "",
-                reg: row["Registro"] || row["registro"] || "",
-                gruppo: row["Gruppo"] || row["gruppo"] || "",
-                stato: row["Stato"] || row["stato"] || "In archivio"
-            }));
-            sync();
-        };
-        reader.readAsArrayBuffer(e.target.files[0]);
-    }
-
-    render();
-</script>
-</body>
-</html>
+    function openModal(key = null) {
+        currentKey = key;
+        document.getElementById('m-title').
