@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archivio Sentenze Cloud PRO</title>
+    <title>Archivio Sentenze Cloud - Fix</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -13,18 +12,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        body { background-color: #F2F2F7; font-family: sans-serif; }
+        body { background-color: #F2F2F7; }
         .apple-card { background: white; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        /* Fix Modal */
         #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; }
         #modal.active { display: flex; }
-        @media print { .no-print { display: none !important; } #print-area { display: block !important; } }
-        #print-area { display: none; text-align: center; padding: 40px; }
     </style>
 </head>
 <body class="p-4 md:p-6">
 
-<div class="max-w-6xl mx-auto no-print">
+<div class="max-w-6xl mx-auto">
     <header class="flex flex-wrap justify-between items-center mb-6 gap-4">
         <h1 class="text-2xl font-bold text-gray-800">📁 Archivio Sentenze Cloud</h1>
         <div class="flex gap-2">
@@ -39,53 +35,45 @@
     </div>
 
     <div class="apple-card overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-gray-50 border-b border-gray-100">
-                    <tr>
-                        <th class="p-4 text-xs font-bold text-gray-400 uppercase">Fascicolo</th>
-                        <th class="p-4 text-xs font-bold text-gray-400 uppercase">Registro</th>
-                        <th class="p-4 text-xs font-bold text-gray-400 uppercase">Gruppo / Posizione</th>
-                        <th class="p-4 text-xs font-bold text-gray-400 uppercase">Stato</th>
-                        <th class="p-4 text-xs font-bold text-gray-400 uppercase text-right">Azioni</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body" class="divide-y divide-gray-50 bg-white text-sm">
-                    <tr><td colspan="5" class="p-10 text-center text-gray-400 italic">Connessione al Cloud in corso...</td></tr>
-                </tbody>
-            </table>
-        </div>
+        <table class="w-full text-left border-collapse text-sm">
+            <thead class="bg-gray-50 border-b border-gray-100">
+                <tr>
+                    <th class="p-4 text-xs font-bold text-gray-400 uppercase">Fascicolo</th>
+                    <th class="p-4 text-xs font-bold text-gray-400 uppercase">Registro</th>
+                    <th class="p-4 text-xs font-bold text-gray-400 uppercase">Gruppo / Posizione</th>
+                    <th class="p-4 text-xs font-bold text-gray-400 uppercase">Stato</th>
+                    <th class="p-4 text-right">Azioni</th>
+                </tr>
+            </thead>
+            <tbody id="table-body" class="divide-y divide-gray-50">
+                <tr><td colspan="5" class="p-10 text-center text-gray-400 italic">Connessione al Cloud...</td></tr>
+            </tbody>
+        </table>
     </div>
 </div>
 
 <div id="modal">
-    <div class="bg-white p-6 rounded-2xl w-full max-w-md mx-4 shadow-2xl">
-        <h2 id="modal-title" class="text-xl font-bold mb-4 text-gray-800">Nuovo Fascicolo</h2>
+    <div class="bg-white p-6 rounded-2xl w-full max-w-md mx-4 shadow-2xl text-sm">
+        <h2 id="modal-title" class="text-xl font-bold mb-4">Dettagli</h2>
         <div class="space-y-3">
             <div class="grid grid-cols-2 gap-3">
-                <input type="text" id="m-num" placeholder="Numero" class="p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none focus:border-blue-500">
-                <input type="text" id="m-anno" placeholder="Anno" class="p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none focus:border-blue-500">
+                <input type="text" id="m-num" placeholder="Numero" class="p-3 bg-gray-50 rounded-xl border outline-none">
+                <input type="text" id="m-anno" placeholder="Anno" class="p-3 bg-gray-50 rounded-xl border outline-none">
             </div>
-            <input type="text" id="m-reg" placeholder="Registro" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none">
-            <input type="text" id="m-gruppo" placeholder="Gruppo (Posizione)" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none">
-            <input type="text" id="m-stato" placeholder="Stato" class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none">
+            <input type="text" id="m-reg" placeholder="Registro" class="w-full p-3 bg-gray-50 rounded-xl border outline-none">
+            <input type="text" id="m-gruppo" placeholder="Gruppo" class="w-full p-3 bg-gray-50 rounded-xl border outline-none">
+            <input type="text" id="m-stato" placeholder="Stato" class="w-full p-3 bg-gray-50 rounded-xl border outline-none">
         </div>
         <div class="flex justify-end gap-3 mt-6">
             <button onclick="closeModal()" class="px-4 py-2 text-gray-400 font-bold">Annulla</button>
-            <button onclick="save()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg">SALVA NEL CLOUD</button>
+            <button onclick="save()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold">SALVA</button>
         </div>
     </div>
-</div>
-
-<div id="print-area">
-    <h1 id="p-label" style="font-size: 30px; font-weight: bold; margin-bottom: 20px;"></h1>
-    <div id="p-qr" style="display: flex; justify-content: center;"></div>
 </div>
 
 <input type="file" id="file-in" class="hidden" onchange="importXLS(event)">
 
 <script>
-    // --- TUA CONFIGURAZIONE FIREBASE ---
     const firebaseConfig = {
       apiKey: "AIzaSyC4PA_joHtGFRudPUYBOQAMrOgVearBt3I",
       authDomain: "archivio-sentenze.firebaseapp.com",
@@ -96,13 +84,11 @@
       appId: "1:139447095387:web:32d031468fa4c74a83af7e"
     };
 
-    // Inizializzazione
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database().ref('sentenze');
     let fullData = [];
     let editingKey = null;
 
-    // Lettura Dati Cloud
     db.on('value', (snap) => {
         const val = snap.val();
         fullData = val ? Object.keys(val).map(k => ({...val[k], fbKey: k})) : [];
@@ -111,30 +97,45 @@
 
     function renderTable() {
         const body = document.getElementById('table-body');
-        if (fullData.length === 0) {
-            body.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-gray-400">Nessun dato trovato. Clicca su NUOVO per iniziare.</td></tr>';
-            return;
-        }
         body.innerHTML = fullData.map(i => `
-            <tr class="hover:bg-gray-50">
-                <td class="p-4 font-bold text-blue-600">${i.num} / ${i.anno}</td>
+            <tr>
+                <td class="p-4 font-bold text-blue-600">${i.num || '-'} / ${i.anno || '-'}</td>
                 <td class="p-4 text-gray-500">${i.reg || '-'}</td>
-                <td class="p-4 font-semibold text-gray-700">${i.gruppo}</td>
-                <td class="p-4"><span class="px-2 py-1 bg-green-100 text-green-700 rounded text-[10px] font-bold uppercase">${i.stato}</span></td>
+                <td class="p-4 font-semibold text-gray-700">${i.gruppo || '-'}</td>
+                <td class="p-4"><span class="px-2 py-1 bg-green-100 text-green-700 rounded text-[10px] font-bold uppercase">${i.stato || 'Archiviata'}</span></td>
                 <td class="p-4 text-right space-x-2">
-                    <button onclick="doPrint('${i.gruppo}')" class="bg-gray-100 px-2 py-1 rounded text-xs hover:bg-black hover:text-white transition">QR</button>
-                    <button onclick="openModal('${i.fbKey}')" class="text-gray-400 hover:text-blue-600 px-1">✏️</button>
-                    <button onclick="del('${i.fbKey}')" class="text-gray-300 hover:text-red-600 px-1">🗑️</button>
+                    <button onclick="openModal('${i.fbKey}')" class="text-gray-400 hover:text-blue-600">✏️</button>
+                    <button onclick="del('${i.fbKey}')" class="text-gray-300 hover:text-red-600">🗑️</button>
                 </td>
             </tr>
         `).join('');
     }
 
-    // Funzioni Finestra (Modal)
+    // MODIFICA QUI: Importazione corretta per la tua maschera
+    function importXLS(e) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+            
+            if (confirm("Importare " + json.length + " righe?")) {
+                json.forEach(row => {
+                    db.push({
+                        num: row["Numero"] || row["numero"] || "", // Cerca entrambe le versioni
+                        anno: row["Anno"] || row["anno"] || "",
+                        reg: row["Registro"] || row["registro"] || "",
+                        gruppo: row["Gruppo"] || row["gruppo"] || "",
+                        stato: row["Stato"] || row["stato"] || "Archiviata"
+                    });
+                });
+            }
+        };
+        reader.readAsArrayBuffer(e.target.files[0]);
+    }
+
     function openModal(key = null) {
         editingKey = key;
-        document.getElementById('modal-title').innerText = key ? "Modifica Sentenza" : "Nuova Sentenza";
-        
         if (key) {
             const item = fullData.find(x => x.fbKey === key);
             document.getElementById('m-num').value = item.num;
@@ -144,14 +145,12 @@
             document.getElementById('m-stato').value = item.stato;
         } else {
             document.querySelectorAll('#modal input').forEach(input => input.value = "");
-            document.getElementById('m-stato').value = "In archivio";
+            document.getElementById('m-stato').value = "Archiviata";
         }
         document.getElementById('modal').classList.add('active');
     }
 
-    function closeModal() {
-        document.getElementById('modal').classList.remove('active');
-    }
+    function closeModal() { document.getElementById('modal').classList.remove('active'); }
 
     function save() {
         const payload = {
@@ -161,62 +160,25 @@
             gruppo: document.getElementById('m-gruppo').value,
             stato: document.getElementById('m-stato').value
         };
-
-        if (!payload.num || !payload.anno) return alert("Numero e Anno sono necessari!");
-
         if (editingKey) db.child(editingKey).set(payload);
         else db.push(payload);
-        
         closeModal();
     }
 
-    function del(key) {
-        if (confirm("Eliminare definitivamente dal Cloud?")) {
-            db.child(key).remove();
-        }
-    }
-
+    function del(key) { if (confirm("Eliminare?")) db.child(key).remove(); }
+    
     function filter() {
         let v = document.getElementById('search').value.toLowerCase();
         let rows = document.querySelectorAll('#table-body tr');
         rows.forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none');
     }
 
-    // EXCEL & QR
     function exportExcel() {
         const clean = fullData.map(({fbKey, ...rest}) => rest);
         const ws = XLSX.utils.json_to_sheet(clean);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Archivio");
         XLSX.writeFile(wb, "archivio_sentenze.xlsx");
-    }
-
-    function importXLS(e) {
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            const data = new Uint8Array(evt.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
-            const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-            if (confirm("Caricare " + json.length + " righe?")) {
-                json.forEach(row => {
-                    db.push({
-                        num: row["Numero"] || row["numero"] || "",
-                        anno: row["Anno"] || row["anno"] || "",
-                        reg: row["Registro"] || row["registro"] || "",
-                        gruppo: row["Gruppo"] || row["gruppo"] || "",
-                        stato: row["Stato"] || row["stato"] || "In archivio"
-                    });
-                });
-            }
-        };
-        reader.readAsArrayBuffer(e.target.files[0]);
-    }
-
-    function doPrint(g) {
-        document.getElementById('p-label').innerText = "GRUPPO: " + g;
-        document.getElementById('p-qr').innerHTML = "";
-        new QRCode(document.getElementById("p-qr"), { text: g, width: 250, height: 250 });
-        setTimeout(() => window.print(), 500);
     }
 </script>
 </body>
