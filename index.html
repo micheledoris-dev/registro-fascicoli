@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archivio Sentenze Cloud - v3</title>
+    <title>Archivio Sentenze v4 (Maschera Pulita)</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -13,20 +13,20 @@
 
     <style>
         body { background-color: #F2F2F7; font-family: sans-serif; }
-        .apple-card { background: white; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; }
+        .apple-card { background: rgba(255,255,255,0.9); border-radius: 18px; border: 1px solid rgba(0,0,0,0.05); }
+        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 9999; align-items: center; justify-content: center; }
         #modal.active { display: flex; }
         @media print { .no-print { display: none !important; } #print-area { display: block !important; } }
         #print-area { display: none; text-align: center; padding: 40px; }
     </style>
 </head>
-<body class="p-4 md:p-6">
+<body class="p-4 md:p-8">
 
 <div class="max-w-6xl mx-auto no-print">
-    <header class="flex flex-wrap justify-between items-center mb-6 gap-4">
+    <header class="flex flex-wrap justify-between items-center mb-8 gap-4">
         <div class="flex items-center gap-3">
             <span class="text-3xl">📁</span>
-            <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Archivio Sentenze Cloud</h1>
+            <h1 class="text-2xl font-bold tracking-tight text-gray-800">Archivio Sentenze Cloud</h1>
         </div>
         <div class="flex gap-2">
             <button onclick="document.getElementById('file-in').click()" class="bg-white border px-4 py-2 rounded-xl text-sm font-semibold shadow-sm hover:bg-gray-50 transition">Importa</button>
@@ -35,23 +35,23 @@
         </div>
     </header>
 
-    <div class="apple-card p-4 mb-6 ring-1 ring-black/5">
-        <input type="text" id="search" placeholder="Cerca numero, anno o posizione..." onkeyup="filter()" class="w-full bg-transparent outline-none text-lg placeholder-gray-300">
+    <div class="apple-card p-4 mb-6 shadow-sm ring-1 ring-black/5">
+        <input type="text" id="search" placeholder="Cerca numero, anno o posizione..." onkeyup="filter()" class="w-full bg-transparent outline-none text-lg">
     </div>
 
     <div class="apple-card overflow-hidden border border-gray-100 shadow-xl">
-        <table class="w-full text-left border-collapse">
-            <thead class="bg-gray-50/50 border-b border-gray-100">
-                <tr>
-                    <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Fascicolo</th>
-                    <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Registro</th>
-                    <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Gruppo / Posizione</th>
-                    <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Stato</th>
-                    <th class="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">Azioni</th>
+        <table class="w-full text-left">
+            <thead class="bg-gray-50 border-b border-gray-100">
+                <tr class="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                    <th class="p-4">Fascicolo</th>
+                    <th class="p-4">Registro</th>
+                    <th class="p-4">Posizione (Ripiano + Gruppo)</th>
+                    <th class="p-4">Stato</th>
+                    <th class="p-4 text-right">Azioni</th>
                 </tr>
             </thead>
             <tbody id="table-body" class="divide-y divide-gray-50 bg-white">
-                <tr><td colspan="5" class="p-10 text-center text-gray-300 italic">Sincronizzazione Cloud in corso...</td></tr>
+                <tr><td colspan="5" class="p-10 text-center text-gray-400 italic loading">Sincronizzazione in corso...</td></tr>
             </tbody>
         </table>
     </div>
@@ -59,15 +59,15 @@
 
 <div id="modal">
     <div class="bg-white p-8 rounded-[25px] w-full max-w-md mx-4 shadow-2xl">
-        <h2 id="modal-title" class="text-2xl font-bold mb-6 text-gray-800">Dettagli Fascicolo</h2>
+        <h2 id="modal-title" class="text-2xl font-bold mb-6">Dettagli Fascicolo</h2>
         <div class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
-                <input type="text" id="m-num" placeholder="Numero" class="p-3 bg-gray-50 rounded-xl border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-blue-500">
-                <input type="text" id="m-anno" placeholder="Anno" class="p-3 bg-gray-50 rounded-xl border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="text" id="m-num" placeholder="Numero" class="p-3 bg-gray-50 rounded-xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="text" id="m-anno" placeholder="Anno" class="p-3 bg-gray-50 rounded-xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
-            <input type="text" id="m-reg" placeholder="Registro" class="w-full p-3 bg-gray-50 rounded-xl border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-blue-500">
-            <input type="text" id="m-gruppo" placeholder="Gruppo (Posizione)" class="w-full p-3 bg-gray-50 rounded-xl border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-blue-500">
-            <input type="text" id="m-stato" placeholder="Stato" class="w-full p-3 bg-gray-50 rounded-xl border-none ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="text" id="m-reg" placeholder="Registro" class="w-full p-3 bg-gray-50 rounded-xl border-none ring-1 ring-gray-200 outline-none">
+            <input type="text" id="m-gruppo" placeholder="Posizione (Ripiano + Gruppo)" class="w-full p-3 bg-gray-50 rounded-xl border-none ring-1 ring-gray-200 outline-none">
+            <input type="text" id="m-stato" placeholder="Stato" class="w-full p-3 bg-gray-50 rounded-xl border-none ring-1 ring-gray-200 outline-none">
         </div>
         <div class="flex justify-end gap-3 mt-8">
             <button onclick="closeModal()" class="px-5 py-2 text-sm font-bold text-gray-400">Annulla</button>
@@ -84,6 +84,7 @@
 <input type="file" id="file-in" class="hidden" onchange="importXLS(event)">
 
 <script>
+    // --- TUA CONFIGURAZIONE FIREBASE ---
     const firebaseConfig = {
       apiKey: "AIzaSyC4PA_joHtGFRudPUYBOQAMrOgVearBt3I",
       authDomain: "archivio-sentenze.firebaseapp.com",
@@ -107,8 +108,12 @@
 
     function renderTable() {
         const body = document.getElementById('table-body');
+        if (fullData.length === 0) {
+            body.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-gray-300 italic">Database vuoto. Importa un file Excel.</td></tr>';
+            return;
+        }
         body.innerHTML = fullData.map(i => `
-            <tr class="hover:bg-blue-50/30 transition border-b border-gray-50 last:border-0">
+            <tr class="hover:bg-blue-50/30 transition border-b border-gray-50last:border-0">
                 <td class="p-4 font-bold text-blue-600">${i.num || '-'} / ${i.anno || '-'}</td>
                 <td class="p-4 text-gray-500 font-medium">${i.reg || '-'}</td>
                 <td class="p-4 font-semibold text-gray-700">${i.gruppo || '-'}</td>
@@ -126,33 +131,41 @@
         `).join('');
     }
 
+    // --- IMPORTAZIONE AGGIORNATA PER LA NUOVA MASCHERA ---
     function importXLS(e) {
         const reader = new FileReader();
         reader.onload = (evt) => {
             const data = new Uint8Array(evt.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            
-            // Usiamo l'estrazione raw per gestire le colonne "ballerine"
+            // Usiamo {header: 1} per leggere per posizione A, B, C...
             const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1}); 
-            const headers = rows[0];
-            const dataRows = rows.slice(1);
+            
+            const dataRows = rows.slice(1); // Salta i titoli
 
-            if (confirm("Caricare " + dataRows.length + " righe nel Cloud?")) {
+            if (confirm("Caricare " + dataRows.length + " righe?")) {
                 dataRows.forEach(row => {
-                    // Mappatura forzata basata sulla posizione delle colonne A, B, C, D...
-                    const num = row[0] || "";
-                    const anno = row[1] || "";
-                    const reg = row[2] || "";
+                    // Mappatura forzata basata sulla tua foto
+                    const num = row[0] || ""; // Colonna A
+                    const anno = row[1] || ""; // Colonna B
+                    const reg = row[2] || "-"; // Colonna C
                     
-                    // Uniamo D, E, F se contengono testo (per il Gruppo lungo)
-                    let gruppo = [row[3], row[4], row[5]].filter(x => x && isNaN(x) && !x.includes('/')).join(" ");
-                    
-                    // Cerchiamo lo Stato (di solito è dove c'è "In archivio")
-                    let stato = row.find(cell => cell === "In archivio" || cell === "Archiviata") || "In archivio";
+                    // UNISCE Ripiano (D) e Gruppo (E) in un'unica posizione nell'app
+                    let ripianoParte = row[3] ? String(row[3]).trim() : "";
+                    let gruppoParte = row[4] ? String(row[4]).trim() : "";
+                    let posizioneCompleta = (ripianoParte + " " + gruppoParte).trim() || "-";
 
-                    if(num || anno) {
-                        db.push({ num, anno, reg, gruppo, stato });
+                    // Prende lo Stato esatto (Colonna F)
+                    let stato = row[5] ? String(row[5]).trim() : "In archivio";
+
+                    if(num) {
+                        db.push({ 
+                            num: num, 
+                            anno: anno, 
+                            reg: reg, 
+                            gruppo: posizioneCompleta, 
+                            stato: stato 
+                        });
                     }
                 });
             }
@@ -160,8 +173,10 @@
         reader.readAsArrayBuffer(e.target.files[0]);
     }
 
+    // --- FUNZIONI STANDARD (Modal, Save, Del, Filter, Export, QR) ---
     function openModal(key = null) {
         editingKey = key;
+        document.getElementById('modal-title').innerText = key ? "Modifica Fascicolo" : "Nuovo Fascicolo";
         if (key) {
             const item = fullData.find(x => x.fbKey === key);
             document.getElementById('m-num').value = item.num;
@@ -186,33 +201,10 @@
             gruppo: document.getElementById('m-gruppo').value,
             stato: document.getElementById('m-stato').value
         };
+        if (!payload.num) return alert("Numero obbligatorio!");
         if (editingKey) db.child(editingKey).set(payload);
         else db.push(payload);
         closeModal();
     }
 
-    function del(key) { if (confirm("Eliminare?")) db.child(key).remove(); }
-    
-    function filter() {
-        let v = document.getElementById('search').value.toLowerCase();
-        let rows = document.querySelectorAll('#table-body tr');
-        rows.forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none');
-    }
-
-    function exportExcel() {
-        const clean = fullData.map(({fbKey, ...rest}) => rest);
-        const ws = XLSX.utils.json_to_sheet(clean);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Archivio");
-        XLSX.writeFile(wb, "archivio_sentenze_completo.xlsx");
-    }
-
-    function doPrint(g) {
-        document.getElementById('p-label').innerText = g;
-        document.getElementById('p-qr').innerHTML = "";
-        new QRCode(document.getElementById("p-qr"), { text: g, width: 250, height: 250 });
-        setTimeout(() => window.print(), 500);
-    }
-</script>
-</body>
-</html>
+    function del(key
