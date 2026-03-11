@@ -15,17 +15,14 @@
         body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; }
         .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 24px; position: fixed; height: 100vh; z-index: 100; }
         .main { margin-left: 260px; padding: 25px; width: calc(100% - 260px); }
-        @media (max-width: 900px) { .sidebar { display: none; } .main { margin-left: 0; width: 100%; padding: 15px; } .stats-grid { grid-template-columns: 1fr 1fr !important; } }
-        .nav-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); margin-bottom: 8px; font-weight: 500; }
-        .nav-item.active { background: rgba(232,201,122,0.1); color: var(--accent); }
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
-        .stat-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); border-left: 4px solid var(--accent); }
-        .stat-val { font-size: 28px; font-weight: 700; color: white; }
+        @media (max-width: 900px) { .sidebar { display: none; } .main { margin-left: 0; width: 100%; padding: 15px; } }
+        .nav-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); margin-bottom: 8px; }
+        .nav-item.active { background: rgba(232,201,122,0.1); color: var(--accent); font-weight: 600; }
         .content-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; }
         input { background: var(--input-bg); border: 1px solid #444; padding: 14px; border-radius: 8px; color: white; width: 100%; margin-bottom: 12px; font-size: 16px; }
         input:focus { border-color: var(--accent); outline: none; background: #333; }
         .btn-add { background: var(--accent); color: black; border: none; padding: 15px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; text-transform: uppercase; }
-        .btn-scan { background: #333; color: white; border: 1px solid var(--accent); padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 20px; cursor: pointer; font-weight: 700; }
+        .btn-alt { background: #333; color: white; border: 1px solid #555; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; }
         td { padding: 15px 10px; border-bottom: 1px solid #1f1f1f; }
         #reader { width: 100%; border-radius: 12px; overflow: hidden; margin-bottom: 20px; display: none; border: 2px solid var(--accent); }
@@ -38,47 +35,53 @@
         <div style="font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 40px;">ARCHIVIO PRO</div>
         <div class="nav-item active" onclick="showPage('dashboard')" id="n-dash">🏠 Dashboard</div>
         <div class="nav-item" onclick="showPage('lista')" id="n-list">📂 Registro</div>
-        <div class="nav-item" onclick="showPage('utility')" id="n-util">⚙️ Backup & QR</div>
+        <div class="nav-item" onclick="showPage('qrpage')" id="n-qrpa">🖨️ Etichette QR</div>
+        <div class="nav-item" onclick="showPage('backup')" id="n-back">💾 Gestione Dati</div>
     </div>
 
     <div class="main">
         <div id="page-dashboard" class="page active">
-            <h1>Riepilogo</h1>
-            <div class="stats-grid">
-                <div class="stat-card"><div>Totali</div><div id="st-tot" class="stat-val">0</div></div>
-                <div class="stat-card" style="border-left-color: var(--green);"><div>In Sede</div><div id="st-sede" class="stat-val">0</div></div>
-                <div class="stat-card" style="border-left-color: var(--red);"><div>Fuori</div><div id="st-fuori" class="stat-val">0</div></div>
-                <div class="stat-card" style="border-left-color: #5a8fad;"><div>Ripiani</div><div id="st-gruppi" class="stat-val">0</div></div>
+            <h1>Riepilogo Cloud</h1>
+            <div id="stats" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:15px; margin-top:20px">
+                <div class="content-card">Totale: <b id="st-tot">0</b></div>
+                <div class="content-card">In Sede: <b id="st-sede">0</b></div>
             </div>
         </div>
 
         <div id="page-lista" class="page" style="display:none">
-            <button class="btn-scan" onclick="startScan()">📷 SCANSIONA QR RIPIANO</button>
+            <button class="btn-add" style="margin-bottom:20px" onclick="startScan()">📷 SCANSIONA QR RIPIANO</button>
             <div id="reader"></div>
-            
             <div class="content-card">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <input type="text" id="in-num" placeholder="Numero">
                     <input type="text" id="in-anno" placeholder="Anno">
                 </div>
                 <input type="text" id="in-rip" placeholder="Ripiano / Posizione">
-                <button class="btn-add" onclick="aggiungi()">Salva Fascicolo</button>
+                <button class="btn-add" onclick="aggiungi()">Salva</button>
             </div>
-            
             <div class="content-card">
-                <input type="text" id="search" placeholder="🔍 Filtra o cerca..." onkeyup="filtra()">
-                <div style="overflow-x: auto;"><table><tbody id="main-table"></tbody></table></div>
+                <input type="text" id="search" placeholder="🔍 Cerca..." onkeyup="filtra()">
+                <table id="main-table"></table>
             </div>
         </div>
 
-        <div id="page-utility" class="page" style="display:none">
+        <div id="page-qrpage" class="page" style="display:none">
+            <h1>Etichette QR</h1>
+            <div id="lista-qr-gruppi" style="margin-top:20px"></div>
+        </div>
+
+        <div id="page-backup" class="page" style="display:none">
+            <h1>Importa/Esporta Excel</h1>
             <div class="content-card">
-                <h3>Esporta/Importa Excel</h3>
-                <button class="btn-add" style="background:#333; color:white; border:1px solid #555; margin-top:10px" onclick="downloadExcel()">Esporta CSV</button>
+                <h3>Esporta (Download)</h3>
+                <p style="font-size:13px; color:var(--text-dim); margin:10px 0">Scarica tutti i dati in formato CSV compatibile con Excel.</p>
+                <button class="btn-alt" onclick="downloadExcel()">SCARICA FILE .CSV</button>
             </div>
             <div class="content-card">
-                <h3>Stampa Etichette QR</h3>
-                <div id="lista-qr-gruppi"></div>
+                <h3>Importa (Upload)</h3>
+                <p style="font-size:13px; color:var(--text-dim); margin:10px 0">Seleziona un file CSV per caricare i dati in blocco.</p>
+                <input type="file" id="fileInput" accept=".csv">
+                <button class="btn-add" onclick="uploadExcel()">CARICA SU CLOUD</button>
             </div>
         </div>
     </div>
@@ -93,82 +96,74 @@
             projectId: "archivio-sentenze",
             storageBucket: "archivio-sentenze.appspot.com",
             messagingSenderId: "139447095387",
-            appId: "1:139447095387:web:32d031468fa4c74a83af7e",
-            measurementId: "G-9NMKDSJ6JB"
+            appId: "1:139447095387:web:32d031468fa4c74a83af7e"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database().ref('fascicoli');
         let currentData = [];
-        let html5QrCode;
 
         db.on('value', (snapshot) => {
             const data = snapshot.val();
             currentData = data ? Object.keys(data).map(key => ({id: key, ...data[key]})) : [];
-            render(currentData);
+            render();
         });
 
-        function startScan() {
-            document.getElementById('reader').style.display = 'block';
-            html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
-                (decodedText) => {
-                    const url = new URL(decodedText);
-                    const ripiano = url.searchParams.get("cerca");
-                    if(ripiano) {
-                        document.getElementById('search').value = ripiano;
-                        filtra();
-                        stopScan();
-                    }
-                }
-            ).catch(err => alert("Errore fotocamera: " + err));
-        }
-
-        function stopScan() {
-            if(html5QrCode) {
-                html5QrCode.stop().then(() => { document.getElementById('reader').style.display = 'none'; });
-            }
-        }
-
-        function aggiungi() {
-            const n = document.getElementById('in-num').value, a = document.getElementById('in-anno').value, r = document.getElementById('in-rip').value;
-            if(!n || !a) return alert("Inserire Numero e Anno!");
-            db.push({ numero: n, anno: a, gruppo: r || "Generale", stato: "In sede", data: new Date().toISOString() });
-            document.getElementById('in-num').value = ""; document.getElementById('in-anno').value = "";
-        }
-
-        function render(lista) {
-            document.getElementById('st-tot').innerText = lista.length;
-            document.getElementById('st-sede').innerText = lista.filter(x => x.stato === 'In sede').length;
-            document.getElementById('st-fuori').innerText = lista.filter(x => x.stato === 'Prelevato').length;
-            const gruppi = [...new Set(lista.map(x => x.gruppo))];
-            document.getElementById('st-gruppi').innerText = gruppi.length;
+        function render() {
+            document.getElementById('st-tot').innerText = currentData.length;
+            document.getElementById('st-sede').innerText = currentData.filter(x => x.stato === 'In sede').length;
             
-            const html = lista.slice().reverse().map(f => `
+            const html = currentData.slice().reverse().map(f => `
                 <tr>
                     <td><b>${f.numero}/${f.anno}</b><br><small>${f.gruppo}</small></td>
-                    <td><span style="color:${f.stato==='In sede'?'var(--green)':'var(--red)'}">${f.stato}</span></td>
-                    <td><button style="background:none; border:none; cursor:pointer" onclick="db.child('${f.id}').remove()">🗑️</button></td>
+                    <td><button style="background:none; border:none; color:red" onclick="db.child('${f.id}').remove()">🗑️</button></td>
                 </tr>`).join('');
             document.getElementById('main-table').innerHTML = html;
 
+            const gruppi = [...new Set(currentData.map(x => x.gruppo))];
             document.getElementById('lista-qr-gruppi').innerHTML = gruppi.map(g => `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
-                    <span>${g}</span><button class="btn-add" style="width:auto; padding:5px 15px" onclick="stampa('${g}')">STAMPA</button>
+                <div class="content-card" style="display:flex; justify-content:space-between; align-items:center">
+                    <span>${g}</span><button class="btn-add" style="width:auto; padding:5px 15px" onclick="stampa('${g}')">STAMPA QR</button>
                 </div>`).join('');
         }
 
-        function stampa(g) {
-            document.getElementById('p-title').innerText = "Ripiano: " + g;
-            document.getElementById('qrcode').innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), { text: window.location.origin + window.location.pathname + "?cerca=" + encodeURIComponent(g), width: 200, height: 200 });
-            setTimeout(() => { window.print(); }, 500);
+        function downloadExcel() {
+            if(currentData.length === 0) return alert("Nessun dato da esportare");
+            let csv = "Numero;Anno;Ripiano;Stato\n";
+            currentData.forEach(f => {
+                csv += `${f.numero};${f.anno};${f.gruppo};${f.stato}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", "backup_archivio.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
-        function filtra() {
-            const val = document.getElementById('search').value.toLowerCase();
-            document.querySelectorAll('#main-table tr').forEach(tr => {
-                tr.style.display = tr.innerText.toLowerCase().includes(val) ? '' : 'none';
-            });
+        function uploadExcel() {
+            const file = document.getElementById('fileInput').files[0];
+            if(!file) return alert("Seleziona un file .csv");
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const rows = e.target.result.split("\n");
+                rows.forEach((row, index) => {
+                    if(index > 0 && row.trim() !== "") {
+                        const cols = row.split(";");
+                        if(cols.length >= 3) {
+                            db.push({
+                                numero: cols[0].trim(),
+                                anno: cols[1].trim(),
+                                gruppo: cols[2].trim(),
+                                stato: cols[3] ? cols[3].trim() : "In sede",
+                                data: new Date().toISOString()
+                            });
+                        }
+                    }
+                });
+                alert("Importazione completata!");
+            };
+            reader.readAsText(file);
         }
 
         function showPage(p) {
@@ -176,12 +171,43 @@
             document.getElementById('page-' + p).style.display = 'block';
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById('n-' + p.substring(0,4)).classList.add('active');
-            stopScan();
         }
 
-        window.onload = () => {
-            const params = new URLSearchParams(window.location.search);
-            if(params.has('cerca')) { showPage('lista'); document.getElementById('search').value = params.get('cerca'); filtra(); }
+        function aggiungi() {
+            const n = document.getElementById('in-num').value, a = document.getElementById('in-anno').value, r = document.getElementById('in-rip').value;
+            if(!n || !a) return alert("Dati mancanti");
+            db.push({ numero: n, anno: a, gruppo: r || "Generale", stato: "In sede", data: new Date().toISOString() });
+            document.getElementById('in-num').value = ""; document.getElementById('in-anno').value = "";
+        }
+
+        function stampa(g) {
+            document.getElementById('p-title').innerText = "Ripiano: " + g;
+            document.getElementById('qrcode').innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), { text: window.location.origin + window.location.pathname + "?cerca=" + encodeURIComponent(g), width: 250, height: 250 });
+            setTimeout(() => { window.print(); }, 500);
+        }
+
+        function filtra() {
+            const v = document.getElementById('search').value.toLowerCase();
+            document.querySelectorAll('#main-table tr').forEach(tr => {
+                tr.style.display = tr.innerText.toLowerCase().includes(v) ? '' : 'none';
+            });
+        }
+
+        function startScan() {
+            const reader = document.getElementById('reader');
+            reader.style.display = 'block';
+            const html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+                const url = new URL(txt);
+                const q = url.searchParams.get("cerca");
+                if(q) {
+                    document.getElementById('search').value = q;
+                    filtra();
+                    html5QrCode.stop();
+                    reader.style.display = 'none';
+                }
+            });
         }
     </script>
 </body>
