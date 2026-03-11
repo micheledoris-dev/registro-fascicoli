@@ -1,90 +1,921 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archivio Fascicoli Pro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
-        body { background-color: #F5F5F7; font-family: 'Inter', -apple-system, sans-serif; color: #1d1d1f; }
-        .glass { background: rgba(255, 255, 255, 0.72); backdrop-filter: saturate(180%) blur(20px); border: 1px solid rgba(255,255,255,0.3); }
-        .apple-shadow { box-shadow: 0 8px 30px rgba(0,0,0,0.04); }
-        .btn-apple { background-color: #0071E3; transition: all 0.2s ease; }
-        .btn-apple:hover { background-color: #0077ED; transform: scale(1.02); }
-        .btn-apple:active { transform: scale(0.98); }
-        @media print { .no-print { display: none !important; } #printArea { display: block !important; } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archivio Fascicoli</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --bg: #F5F5F7;
+    --blue: #0071E3;
+    --blue-hover: #0077ED;
+    --blue-light: #E8F0FD;
+    --red: #FF3B30;
+    --green: #34C759;
+    --orange: #FF9500;
+    --gray1: #1D1D1F;
+    --gray2: #6E6E73;
+    --gray3: #AEAEB2;
+    --gray4: #D1D1D6;
+    --gray5: #F2F2F7;
+    --white: #FFFFFF;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --glass: rgba(255,255,255,0.72);
+    --shadow: 0 2px 20px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.14);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--gray1);
+    min-height: 100vh;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(245,245,247,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    padding: 0 24px;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .nav-actions { display: flex; gap: 8px; }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 20px; border: none;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s ease; white-space: nowrap;
+    font-family: inherit;
+  }
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-primary:hover { background: var(--blue-hover); transform: scale(1.02); }
+  .btn-secondary { background: var(--gray5); color: var(--gray1); }
+  .btn-secondary:hover { background: var(--gray4); }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-danger:hover { opacity: 0.85; }
+  .btn-success { background: var(--green); color: white; }
+  .btn-icon { padding: 8px 12px; }
+  .btn svg { flex-shrink: 0; }
+
+  /* MAIN */
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+
+  /* SEARCH BAR */
+  .search-card {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.8);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .search-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .field-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
+  .field-label { font-size: 12px; font-weight: 600; color: var(--gray2); text-transform: uppercase; letter-spacing: 0.5px; }
+  .field-input {
+    padding: 10px 14px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--gray4);
+    background: var(--white); font-size: 15px; font-family: inherit;
+    transition: border-color 0.15s; outline: none;
+  }
+  .field-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,113,227,0.15); }
+
+  /* STATS */
+  .stats-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .stat-card {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.8);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px 20px;
+    flex: 1; min-width: 120px;
+  }
+  .stat-value { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+  .stat-label { font-size: 12px; color: var(--gray2); margin-top: 2px; }
+
+  /* TABLE CARD */
+  .table-card {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.8);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .table-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .table-header h2 { font-size: 16px; font-weight: 700; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; color: var(--gray2); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.06); background: rgba(0,0,0,0.02); white-space: nowrap; }
+  td { padding: 12px 14px; border-bottom: 1px solid rgba(0,0,0,0.04); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(0,113,227,0.03); }
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+  }
+  .badge-group { background: var(--blue-light); color: var(--blue); }
+  .badge-out { background: #FFF0E6; color: var(--orange); }
+  .badge-in { background: #E6F7EC; color: var(--green); }
+  .actions-cell { display: flex; gap: 6px; white-space: nowrap; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 8px; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--gray2); }
+  .empty-state svg { margin-bottom: 12px; opacity: 0.4; }
+  .empty-state p { font-size: 16px; font-weight: 500; }
+
+  /* GROUPS */
+  .groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .group-card {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.8);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px; text-align: center; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .group-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .group-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .group-card p { font-size: 12px; color: var(--gray2); }
+  .group-qr { width: 80px; height: 80px; margin: 8px auto; }
+  .group-qr img { width: 100%; height: 100%; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px; opacity: 0; transition: opacity 0.2s;
+  }
+  .modal-overlay.active { opacity: 1; }
+  .modal {
+    background: var(--white);
+    border-radius: 20px;
+    box-shadow: var(--shadow-lg);
+    width: 100%; max-width: 560px;
+    max-height: 90vh; overflow-y: auto;
+    transform: scale(0.95); transition: transform 0.2s;
+  }
+  .modal-overlay.active .modal { transform: scale(1); }
+  .modal-header { padding: 20px 24px 0; display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h2 { font-size: 20px; font-weight: 700; }
+  .modal-close { width: 32px; height: 32px; border-radius: 50%; background: var(--gray5); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--gray2); transition: background 0.15s; }
+  .modal-close:hover { background: var(--gray4); }
+  .modal-body { padding: 20px 24px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-full { grid-column: 1 / -1; }
+  textarea.field-input { resize: vertical; min-height: 80px; }
+  .modal-footer { padding: 0 24px 20px; display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* CONFIRM MODAL */
+  .confirm-box { padding: 24px; }
+  .confirm-box p { margin-bottom: 16px; color: var(--gray2); line-height: 1.5; }
+  .confirm-input-label { font-size: 13px; color: var(--gray2); margin-bottom: 6px; }
+  .confirm-word { font-weight: 700; color: var(--red); }
+
+  /* QR SCANNER */
+  .scanner-area { background: #000; border-radius: 12px; overflow: hidden; position: relative; aspect-ratio: 1; }
+  #scanner-video { width: 100%; height: 100%; object-fit: cover; }
+  .scanner-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .scanner-frame { width: 60%; aspect-ratio: 1; border: 3px solid var(--blue); border-radius: 12px; box-shadow: 0 0 0 2000px rgba(0,0,0,0.5); }
+  .scanner-result { margin-top: 16px; padding: 14px; background: var(--gray5); border-radius: var(--radius-sm); }
+
+  /* PRINT */
+  @media print {
+    body * { visibility: hidden; }
+    #print-area, #print-area * { visibility: visible; }
+    #print-area { position: fixed; inset: 0; background: white; padding: 40px; }
+    .print-group { page-break-after: always; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; }
+    .print-group h1 { font-size: 36px; margin-bottom: 24px; }
+    .print-group-qr { width: 200px; height: 200px; }
+    .print-group-qr img { width: 100%; }
+  }
+  #print-area { display: none; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; background: var(--gray5); border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+  .tab { flex: 1; padding: 8px; border-radius: 8px; border: none; background: none; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--gray2); transition: all 0.15s; font-family: inherit; }
+  .tab.active { background: var(--white); color: var(--gray1); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    nav { padding: 0 16px; }
+    .nav-title { font-size: 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .btn span { display: none; }
+    .stat-value { font-size: 22px; }
+    th, td { padding: 8px 10px; }
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--gray1); color: white; padding: 12px 20px;
+    border-radius: 24px; font-size: 14px; font-weight: 500;
+    z-index: 9999; opacity: 0; transition: opacity 0.2s;
+    white-space: nowrap; box-shadow: var(--shadow-lg);
+  }
+  .toast.show { opacity: 1; }
+  .tag-out { color: var(--orange); font-weight: 600; font-size: 12px; }
+  .tag-in { color: var(--green); font-weight: 600; font-size: 12px; }
+</style>
 </head>
-<body class="p-4 md:p-8">
+<body>
 
-<div class="max-w-7xl mx-auto no-print">
-    <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-        <div>
-            <h1 class="text-4xl font-semibold tracking-tight">Archivio Digitale</h1>
-            <p class="text-gray-500 text-sm">Gestione fascicoli con doppia sicurezza</p>
-        </div>
-        <div class="flex gap-3">
-            <button onclick="document.getElementById('fileIn').click()" class="bg-white border px-5 py-2 rounded-full text-sm font-medium apple-shadow hover:bg-gray-50">Importa Excel</button>
-            <input type="file" id="fileIn" class="hidden" accept=".xlsx" onchange="importaExcel(event)">
-            <button onclick="esportaExcel()" class="bg-black text-white px-5 py-2 rounded-full text-sm font-medium apple-shadow">Esporta Excel</button>
-        </div>
-    </header>
+<nav>
+  <div class="nav-title">📁 Archivio Fascicoli</div>
+  <div class="nav-actions">
+    <button class="btn btn-secondary btn-icon" onclick="importExcel()" title="Importa Excel">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span>Importa</span>
+    </button>
+    <button class="btn btn-secondary btn-icon" onclick="exportExcel()" title="Esporta Excel">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Esporta</span>
+    </button>
+    <button class="btn btn-primary" onclick="openAddModal()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Nuovo</span>
+    </button>
+  </div>
+</nav>
 
-    <div class="glass p-6 rounded-[24px] apple-shadow mb-8">
-        <h2 class="text-lg font-semibold mb-4 text-blue-600">Inserisci Nuovo Fascicolo</h2>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input id="num" type="text" placeholder="Numero Fascicolo" class="p-3 rounded-xl border bg-white/50 focus:ring-2 focus:ring-blue-400 outline-none">
-            <input id="anno" type="text" placeholder="Anno" class="p-3 rounded-xl border bg-white/50 focus:ring-2 focus:ring-blue-400 outline-none">
-            <input id="reg" type="text" placeholder="Numero Registro" class="p-3 rounded-xl border bg-white/50 focus:ring-2 focus:ring-blue-400 outline-none">
-            <input id="gruppo" type="text" placeholder="Gruppo di appartenenza" class="p-3 rounded-xl border bg-white/50 focus:ring-2 focus:ring-blue-400 outline-none">
-            <input id="note" type="text" placeholder="Note aggiuntive" class="p-3 rounded-xl border bg-white/50 focus:ring-2 focus:ring-blue-400 outline-none col-span-1 md:col-span-2">
-            <input id="preleva" type="text" placeholder="Nome chi preleva" class="p-3 rounded-xl border bg-white/50 focus:ring-2 focus:ring-blue-400 outline-none">
-            <input id="ripone" type="text" placeholder="Nome chi ripone" class="p-3 rounded-xl border bg-white/50 focus:ring-2 focus:ring-blue-400 outline-none">
-            <button onclick="aggiungiRecord()" class="btn-apple text-white font-semibold py-3 rounded-xl col-span-1 md:col-span-4">Salva nel Database</button>
-        </div>
+<main>
+  <!-- SEARCH -->
+  <div class="search-card">
+    <div class="search-row">
+      <div class="field-group">
+        <label class="field-label">N° Fascicolo</label>
+        <input class="field-input" id="s-numero" placeholder="Es. 1234" oninput="filterRecords()">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Anno</label>
+        <input class="field-input" id="s-anno" placeholder="Es. 2024" oninput="filterRecords()">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Registro</label>
+        <input class="field-input" id="s-registro" placeholder="Es. RG" oninput="filterRecords()">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Gruppo</label>
+        <input class="field-input" id="s-gruppo" placeholder="Es. A" oninput="filterRecords()">
+      </div>
+      <button class="btn btn-secondary" onclick="clearSearch()">Reset</button>
     </div>
+  </div>
 
-    <div class="glass rounded-[24px] apple-shadow overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left">
-                <thead class="bg-gray-100/50">
-                    <tr>
-                        <th class="p-4 text-xs uppercase text-gray-400 font-bold">Fascicolo/Anno</th>
-                        <th class="p-4 text-xs uppercase text-gray-400 font-bold">Registro</th>
-                        <th class="p-4 text-xs uppercase text-gray-400 font-bold">Gruppo</th>
-                        <th class="p-4 text-xs uppercase text-gray-400 font-bold">Log Prelievo/Riposizione</th>
-                        <th class="p-4 text-xs uppercase text-gray-400 font-bold text-right">Azioni</th>
-                    </tr>
-                </thead>
-                <tbody id="listaFascicoli" class="divide-y divide-gray-100"></tbody>
-            </table>
-        </div>
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('fascicoli')">📋 Fascicoli</button>
+    <button class="tab" onclick="switchTab('gruppi')">📦 Gruppi & QR</button>
+    <button class="tab" onclick="switchTab('scanner')">📷 Scanner QR</button>
+  </div>
+
+  <!-- TAB FASCICOLI -->
+  <div class="tab-panel active" id="tab-fascicoli">
+    <div class="stats-row" id="stats-row"></div>
+    <div class="table-card">
+      <div class="table-header">
+        <h2>Registro Fascicoli</h2>
+        <span id="result-count" style="font-size:13px;color:var(--gray2)"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>N° Fascicolo</th>
+              <th>Anno</th>
+              <th>Registro</th>
+              <th>Gruppo</th>
+              <th>Stato</th>
+              <th>Prelievo</th>
+              <th>Riconsegna</th>
+              <th>Note</th>
+              <th>Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="records-tbody"></tbody>
+        </table>
+      </div>
     </div>
+  </div>
+
+  <!-- TAB GRUPPI -->
+  <div class="tab-panel" id="tab-gruppi">
+    <div class="table-card" style="margin-bottom:16px">
+      <div class="table-header">
+        <h2>Gestione Gruppi</h2>
+        <button class="btn btn-primary btn-sm" onclick="printAllGroups()">🖨️ Stampa tutti i QR</button>
+      </div>
+      <div style="padding:16px">
+        <div class="search-row">
+          <div class="field-group" style="max-width:220px">
+            <label class="field-label">Aggiungi nuovo gruppo</label>
+            <input class="field-input" id="new-group-input" placeholder="Nome gruppo...">
+          </div>
+          <button class="btn btn-primary" onclick="addGroup()" style="align-self:flex-end">Aggiungi</button>
+        </div>
+      </div>
+    </div>
+    <div class="groups-grid" id="groups-grid"></div>
+  </div>
+
+  <!-- TAB SCANNER -->
+  <div class="tab-panel" id="tab-scanner">
+    <div class="table-card">
+      <div class="table-header"><h2>📷 Scanner QR Code</h2></div>
+      <div style="padding:20px">
+        <div class="scanner-area" id="scanner-area">
+          <video id="scanner-video" autoplay playsinline muted></video>
+          <div class="scanner-overlay">
+            <div class="scanner-frame"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="btn btn-primary" id="scanner-start-btn" onclick="startScanner()">▶ Avvia Scanner</button>
+          <button class="btn btn-secondary" onclick="stopScanner()">⏹ Ferma</button>
+        </div>
+        <div id="scanner-result" class="scanner-result" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- PRINT AREA -->
+<div id="print-area"></div>
+
+<!-- MODAL ADD/EDIT -->
+<div class="modal-overlay" id="modal-form" onclick="if(event.target===this)closeModal('modal-form')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-form-title">Nuovo Fascicolo</h2>
+      <button class="modal-close" onclick="closeModal('modal-form')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field-group">
+          <label class="field-label">N° Fascicolo *</label>
+          <input class="field-input" id="f-numero" placeholder="Es. 1234">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Anno *</label>
+          <input class="field-input" id="f-anno" placeholder="Es. 2024" type="number">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Numero Registro</label>
+          <input class="field-input" id="f-registro" placeholder="Es. RG">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Gruppo</label>
+          <select class="field-input" id="f-gruppo">
+            <option value="">-- Nessun gruppo --</option>
+          </select>
+        </div>
+        <div class="field-group form-full">
+          <label class="field-label">Note</label>
+          <textarea class="field-input" id="f-note" placeholder="Note aggiuntive..."></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Chi preleva</label>
+          <input class="field-input" id="f-preleva-nome" placeholder="Nome">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Data prelievo</label>
+          <input class="field-input" id="f-preleva-data" type="date">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Chi riconsegna</label>
+          <input class="field-input" id="f-riconsegna-nome" placeholder="Nome">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Data riconsegna</label>
+          <input class="field-input" id="f-riconsegna-data" type="date">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-form')">Annulla</button>
+      <button class="btn btn-primary" onclick="saveRecord()">💾 Salva</button>
+    </div>
+  </div>
 </div>
 
-<div id="printArea" class="hidden bg-white min-h-screen p-10 text-center">
-    <div class="border-4 border-black p-20 inline-block rounded-3xl">
-        <h1 id="printGruppo" class="text-6xl font-bold mb-10 text-uppercase tracking-tighter"></h1>
-        <div id="qrcode" class="flex justify-center mb-10"></div>
-        <p class="text-2xl font-light">Etichetta Archivio Digitale</p>
+<!-- MODAL CONFIRM -->
+<div class="modal-overlay" id="modal-confirm" onclick="if(event.target===this)closeModal('modal-confirm')">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h2 id="confirm-title">Conferma operazione</h2>
+      <button class="modal-close" onclick="closeModal('modal-confirm')">✕</button>
     </div>
+    <div class="confirm-box">
+      <p id="confirm-desc"></p>
+      <div class="field-group">
+        <div class="confirm-input-label">Digita <span class="confirm-word">CONFERMA</span> per procedere:</div>
+        <input class="field-input" id="confirm-word-input" placeholder="CONFERMA" oninput="checkConfirmWord()">
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">
+        <button class="btn btn-secondary" onclick="closeModal('modal-confirm')">Annulla</button>
+        <button class="btn btn-danger" id="confirm-proceed-btn" onclick="executeConfirmAction()" disabled>Procedi</button>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- MODAL GROUP DETAIL -->
+<div class="modal-overlay" id="modal-group" onclick="if(event.target===this)closeModal('modal-group')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="group-modal-title">Gruppo</h2>
+      <button class="modal-close" onclick="closeModal('modal-group')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+        <div id="group-modal-qr" style="width:120px;height:120px;flex-shrink:0"></div>
+        <div style="flex:1">
+          <div id="group-modal-stats" style="margin-bottom:12px;color:var(--gray2);font-size:14px"></div>
+          <button class="btn btn-secondary btn-sm" onclick="printSingleGroup(currentGroupModal)">🖨️ Stampa QR</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteGroupConfirm(currentGroupModal)" style="margin-left:8px">🗑️ Elimina gruppo</button>
+        </div>
+      </div>
+      <div style="margin-top:20px">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:10px">Fascicoli in questo gruppo:</h3>
+        <table style="width:100%;font-size:13px;border-collapse:collapse">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--gray4);color:var(--gray2);font-size:11px;text-transform:uppercase">Fascicolo</th>
+              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--gray4);color:var(--gray2);font-size:11px;text-transform:uppercase">Anno</th>
+              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--gray4);color:var(--gray2);font-size:11px;text-transform:uppercase">Registro</th>
+              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--gray4);color:var(--gray2);font-size:11px;text-transform:uppercase">Stato</th>
+            </tr>
+          </thead>
+          <tbody id="group-modal-records"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="import-input" accept=".xlsx,.xls" style="display:none" onchange="handleImport(event)">
+<div class="toast" id="toast"></div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('archivio_digitale')) || [];
+// ===== DATA =====
+let records = JSON.parse(localStorage.getItem('fascicoli_records') || '[]');
+let groups = JSON.parse(localStorage.getItem('fascicoli_groups') || '["A","B","C"]');
+let editingId = null;
+let confirmAction = null;
+let currentGroupModal = null;
+let scannerStream = null;
+let scannerInterval = null;
+let filteredRecords = [];
 
-    function salva() {
-        localStorage.setItem('archivio_digitale', JSON.stringify(db));
-        render();
+function save() {
+  localStorage.setItem('fascicoli_records', JSON.stringify(records));
+  localStorage.setItem('fascicoli_groups', JSON.stringify(groups));
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+// ===== RENDER =====
+function render() {
+  renderStats();
+  renderTable();
+  renderGroups();
+  updateGroupSelects();
+}
+
+function renderStats() {
+  const total = records.length;
+  const out = records.filter(r => r.prelevaNome && !r.riconsegnaNome).length;
+  const withGroup = records.filter(r => r.gruppo).length;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Fascicoli totali</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--orange)">${out}</div><div class="stat-label">Prelevati</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--green)">${total - out}</div><div class="stat-label">In archivio</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--blue)">${groups.length}</div><div class="stat-label">Gruppi</div></div>
+  `;
+}
+
+function filterRecords() {
+  const sNum = document.getElementById('s-numero').value.trim().toLowerCase();
+  const sAnno = document.getElementById('s-anno').value.trim();
+  const sReg = document.getElementById('s-registro').value.trim().toLowerCase();
+  const sGrup = document.getElementById('s-gruppo').value.trim().toLowerCase();
+  filteredRecords = records.filter(r => {
+    if (sNum && !String(r.numero).toLowerCase().includes(sNum)) return false;
+    if (sAnno && String(r.anno) !== sAnno) return false;
+    if (sReg && !String(r.registro || '').toLowerCase().includes(sReg)) return false;
+    if (sGrup && !String(r.gruppo || '').toLowerCase().includes(sGrup)) return false;
+    return true;
+  });
+  renderTable();
+}
+
+function clearSearch() {
+  ['s-numero','s-anno','s-registro','s-gruppo'].forEach(id => document.getElementById(id).value = '');
+  filteredRecords = [];
+  renderTable();
+}
+
+function renderTable() {
+  const list = filteredRecords.length || document.getElementById('s-numero').value || document.getElementById('s-anno').value || document.getElementById('s-registro').value || document.getElementById('s-gruppo').value ? filteredRecords : records;
+  const count = list.length;
+  document.getElementById('result-count').textContent = `${count} fascicol${count === 1 ? 'o' : 'i'}`;
+  const tbody = document.getElementById('records-tbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>Nessun fascicolo trovato</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(r => {
+    const isOut = r.prelevaNome && !r.riconsegnaNome;
+    const stato = isOut
+      ? `<span class="badge badge-out">Prelevato</span>`
+      : `<span class="badge badge-in">In archivio</span>`;
+    const prelievo = r.prelevaNome ? `<span class="tag-out">${escHtml(r.prelevaNome)}</span>${r.prelevData ? `<br><small style="color:var(--gray3)">${r.prelevData}</small>` : ''}` : '—';
+    const riconsegna = r.riconsegnaNome ? `<span class="tag-in">${escHtml(r.riconsegnaNome)}</span>${r.riconsData ? `<br><small style="color:var(--gray3)">${r.riconsData}</small>` : ''}` : '—';
+    return `<tr>
+      <td><strong>${escHtml(r.numero)}</strong></td>
+      <td>${r.anno || '—'}</td>
+      <td>${r.registro ? `<span class="badge" style="background:var(--gray5)">${escHtml(r.registro)}</span>` : '—'}</td>
+      <td>${r.gruppo ? `<span class="badge badge-group">${escHtml(r.gruppo)}</span>` : '—'}</td>
+      <td>${stato}</td>
+      <td>${prelievo}</td>
+      <td>${riconsegna}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.note ? escHtml(r.note) : '—'}</td>
+      <td><div class="actions-cell">
+        <button class="btn btn-secondary btn-sm" onclick="openEditModal('${r.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRecord('${r.id}')">🗑️</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===== GROUPS =====
+const groupColors = ['#0071E3','#34C759','#FF9500','#FF3B30','#AF52DE','#5856D6','#32ADE6','#FF2D55'];
+function getGroupColor(g) { return groupColors[Math.abs(hashStr(g)) % groupColors.length]; }
+function hashStr(s) { let h=0; for(let i=0;i<s.length;i++) h=Math.imul(31,h)+s.charCodeAt(i)|0; return h; }
+
+function renderGroups() {
+  const grid = document.getElementById('groups-grid');
+  if (!groups.length) { grid.innerHTML = '<p style="color:var(--gray2)">Nessun gruppo. Aggiungine uno sopra.</p>'; return; }
+  grid.innerHTML = groups.map(g => {
+    const count = records.filter(r => r.gruppo === g).length;
+    const color = getGroupColor(g);
+    return `<div class="group-card" onclick="openGroupModal('${escHtml(g)}')">
+      <div style="font-size:28px;width:48px;height:48px;border-radius:12px;background:${color};color:white;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-weight:700">${g.charAt(0).toUpperCase()}</div>
+      <h3>${escHtml(g)}</h3>
+      <p>${count} fascicol${count===1?'o':'i'}</p>
+    </div>`;
+  }).join('');
+}
+
+function addGroup() {
+  const val = document.getElementById('new-group-input').value.trim();
+  if (!val) return;
+  if (groups.includes(val)) { showToast('Gruppo già esistente'); return; }
+  groups.push(val);
+  save();
+  document.getElementById('new-group-input').value = '';
+  renderGroups();
+  updateGroupSelects();
+  showToast(`Gruppo "${val}" aggiunto`);
+}
+
+function updateGroupSelects() {
+  ['f-gruppo'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">-- Nessun gruppo --</option>' + groups.map(g => `<option value="${escHtml(g)}"${g===cur?' selected':''}>${escHtml(g)}</option>`).join('');
+  });
+}
+
+// ===== GROUP MODAL =====
+function openGroupModal(g) {
+  currentGroupModal = g;
+  document.getElementById('group-modal-title').textContent = `Gruppo: ${g}`;
+  const recs = records.filter(r => r.gruppo === g);
+  document.getElementById('group-modal-stats').textContent = `${recs.length} fascicoli — ${recs.filter(r=>r.prelevaNome&&!r.riconsegnaNome).length} prelevati`;
+  // QR
+  const qrDiv = document.getElementById('group-modal-qr');
+  qrDiv.innerHTML = '';
+  new QRCode(qrDiv, { text: `GRUPPO:${g}`, width: 120, height: 120, correctLevel: QRCode.CorrectLevel.M });
+  // table
+  document.getElementById('group-modal-records').innerHTML = recs.length ? recs.map(r => {
+    const isOut = r.prelevaNome && !r.riconsegnaNome;
+    return `<tr>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--gray5)">${escHtml(r.numero)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--gray5)">${r.anno||'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--gray5)">${r.registro||'—'}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--gray5)">${isOut?'<span style="color:var(--orange);font-weight:600">Prelevato</span>':'<span style="color:var(--green);font-weight:600">In archivio</span>'}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="4" style="padding:12px;color:var(--gray2)">Nessun fascicolo in questo gruppo</td></tr>';
+  openModal('modal-group');
+}
+
+function deleteGroupConfirm(g) {
+  closeModal('modal-group');
+  openConfirm(
+    `Elimina gruppo "${g}"`,
+    `Stai per eliminare il gruppo <strong>${g}</strong>. I fascicoli non verranno eliminati, ma perderanno l'assegnazione al gruppo.`,
+    () => {
+      groups = groups.filter(x => x !== g);
+      records = records.map(r => r.gruppo === g ? {...r, gruppo: ''} : r);
+      save(); render(); showToast(`Gruppo "${g}" eliminato`);
     }
+  );
+}
 
-    function aggiungiRecord() {
-        const record = {
-            id: Date.now(),
-            numero: document.getElementById('num').value,
-            anno: document.getElementById('anno').value,
-            registro: document.getElementById('reg').value,
-            gruppo: document.getElementById('gruppo').value,
+// ===== PRINT =====
+function generateQRDataURL(text, size=200) {
+  return new Promise(resolve => {
+    const div = document.createElement('div');
+    div.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+    document.body.appendChild(div);
+    const qr = new QRCode(div, { text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
+    setTimeout(() => {
+      const img = div.querySelector('img');
+      const src = img ? img.src : '';
+      document.body.removeChild(div);
+      resolve(src);
+    }, 300);
+  });
+}
+
+async function printSingleGroup(g) {
+  const qrSrc = await generateQRDataURL(`GRUPPO:${g}`, 200);
+  const pa = document.getElementById('print-area');
+  pa.innerHTML = `<div class="print-group"><h1>Gruppo: ${g}</h1><div class="print-group-qr"><img src="${qrSrc}"></div><p style="margin-top:16px;font-size:18px;color:#666">${records.filter(r=>r.gruppo===g).length} fascicoli</p></div>`;
+  pa.style.display = 'block';
+  window.print();
+  pa.style.display = 'none';
+}
+
+async function printAllGroups() {
+  const pa = document.getElementById('print-area');
+  pa.innerHTML = '';
+  for (const g of groups) {
+    const qrSrc = await generateQRDataURL(`GRUPPO:${g}`, 200);
+    const div = document.createElement('div');
+    div.className = 'print-group';
+    div.innerHTML = `<h1>Gruppo: ${g}</h1><div class="print-group-qr"><img src="${qrSrc}"></div><p style="margin-top:16px;font-size:18px;color:#666">${records.filter(r=>r.gruppo===g).length} fascicoli</p>`;
+    pa.appendChild(div);
+  }
+  pa.style.display = 'block';
+  window.print();
+  pa.style.display = 'none';
+}
+
+// ===== RECORD CRUD =====
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modal-form-title').textContent = 'Nuovo Fascicolo';
+  ['f-numero','f-anno','f-registro','f-note','f-preleva-nome','f-preleva-data','f-riconsegna-nome','f-riconsegna-data'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-gruppo').value = '';
+  updateGroupSelects();
+  openModal('modal-form');
+}
+
+function openEditModal(id) {
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  editingId = id;
+  document.getElementById('modal-form-title').textContent = 'Modifica Fascicolo';
+  document.getElementById('f-numero').value = r.numero || '';
+  document.getElementById('f-anno').value = r.anno || '';
+  document.getElementById('f-registro').value = r.registro || '';
+  document.getElementById('f-note').value = r.note || '';
+  document.getElementById('f-preleva-nome').value = r.prelevaNome || '';
+  document.getElementById('f-preleva-data').value = r.prelevData || '';
+  document.getElementById('f-riconsegna-nome').value = r.riconsegnaNome || '';
+  document.getElementById('f-riconsegna-data').value = r.riconsData || '';
+  updateGroupSelects();
+  document.getElementById('f-gruppo').value = r.gruppo || '';
+  openModal('modal-form');
+}
+
+function saveRecord() {
+  const numero = document.getElementById('f-numero').value.trim();
+  const anno = document.getElementById('f-anno').value.trim();
+  if (!numero) { showToast('Inserisci il numero fascicolo'); return; }
+
+  const data = {
+    numero, anno,
+    registro: document.getElementById('f-registro').value.trim(),
+    gruppo: document.getElementById('f-gruppo').value,
+    note: document.getElementById('f-note').value.trim(),
+    prelevaNome: document.getElementById('f-preleva-nome').value.trim(),
+    prelevData: document.getElementById('f-preleva-data').value,
+    riconsegnaNome: document.getElementById('f-riconsegna-nome').value.trim(),
+    riconsData: document.getElementById('f-riconsegna-data').value,
+  };
+
+  if (editingId) {
+    openConfirm('Conferma modifica', `Stai per modificare il fascicolo <strong>${numero}</strong>. Vuoi continuare?`, () => {
+      records = records.map(r => r.id === editingId ? {...r, ...data} : r);
+      save(); render(); closeModal('modal-form'); showToast('Fascicolo modificato');
+    });
+  } else {
+    data.id = uid();
+    records.push(data);
+    save(); render(); closeModal('modal-form'); showToast('Fascicolo aggiunto');
+  }
+}
+
+function deleteRecord(id) {
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  openConfirm('Elimina fascicolo', `Stai per eliminare il fascicolo <strong>${r.numero}</strong> (${r.anno || 'anno n/d'}). Questa azione è irreversibile.`, () => {
+    records = records.filter(x => x.id !== id);
+    save(); render(); showToast('Fascicolo eliminato');
+  });
+}
+
+// ===== CONFIRM =====
+function openConfirm(title, desc, action) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-desc').innerHTML = desc;
+  document.getElementById('confirm-word-input').value = '';
+  document.getElementById('confirm-proceed-btn').disabled = true;
+  confirmAction = action;
+  openModal('modal-confirm');
+}
+
+function checkConfirmWord() {
+  const val = document.getElementById('confirm-word-input').value;
+  document.getElementById('confirm-proceed-btn').disabled = val !== 'CONFERMA';
+}
+
+function executeConfirmAction() {
+  if (confirmAction) { confirmAction(); confirmAction = null; }
+  closeModal('modal-confirm');
+}
+
+// ===== MODALS =====
+function openModal(id) {
+  const el = document.getElementById(id);
+  el.style.display = 'flex';
+  requestAnimationFrame(() => el.classList.add('active'));
+}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('active');
+  setTimeout(() => el.style.display = 'none', 200);
+}
+
+// ===== TABS =====
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['fascicoli','gruppi','scanner'][i] === tab));
+  document.querySelectorAll('.tab-panel').forEach((p,i) => p.classList.toggle('active', ['tab-fascicoli','tab-gruppi','tab-scanner'][i] === `tab-${tab}`));
+  if (tab !== 'scanner') stopScanner();
+}
+
+// ===== EXCEL =====
+function importExcel() { document.getElementById('import-input').click(); }
+function handleImport(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const wb = XLSX.read(ev.target.result, { type: 'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      let added = 0;
+      rows.forEach(row => {
+        const numero = String(row['Numero Fascicolo'] || row['numero'] || '').trim();
+        if (!numero) return;
+        const g = String(row['Gruppo'] || row['gruppo'] || '').trim();
+        if (g && !groups.includes(g)) groups.push(g);
+        records.push({
+          id: uid(), numero,
+          anno: String(row['Anno'] || row['anno'] || '').trim(),
+          registro: String(row['Registro'] || row['registro'] || '').trim(),
+          gruppo: g,
+          note: String(row['Note'] || row['note'] || '').trim(),
+          prelevaNome: String(row['Chi Preleva'] || '').trim(),
+          prelevData: String(row['Data Prelievo'] || '').trim(),
+          riconsegnaNome: String(row['Chi Riconsegna'] || '').trim(),
+          riconsData: String(row['Data Riconsegna'] || '').trim(),
+        });
+        added++;
+      });
+      save(); render(); showToast(`${added} fascicoli importati`);
+    } catch(err) { showToast('Errore importazione: ' + err.message); }
+  };
+  reader.readAsBinaryString(file);
+  e.target.value = '';
+}
+
+function exportExcel() {
+  const data = records.map(r => ({
+    'Numero Fascicolo': r.numero, 'Anno': r.anno, 'Registro': r.registro,
+    'Gruppo': r.gruppo, 'Note': r.note,
+    'Chi Preleva': r.prelevaNome, 'Data Prelievo': r.prelevData,
+    'Chi Riconsegna': r.riconsegnaNome, 'Data Riconsegna': r.riconsData,
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Fascicoli');
+  XLSX.writeFile(wb, `archivio_fascicoli_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast('Esportazione completata');
+}
+
+// ===== SCANNER =====
+async function startScanner() {
+  try {
+    scannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    document.getElementById('scanner-video').srcObject = scannerStream;
+    document.getElementById('scanner-result').style.display = 'none';
+    // Use BarcodeDetector if available
+    if ('BarcodeDetector' in window) {
+      const detector = new BarcodeDetector({ formats: ['qr_code'] });
+      const video = document.getElementById('scanner-video');
+      scannerInterval = setInterval(async () => {
+        try {
+          const codes = await detector.detect(video);
+          if (codes.length > 0) {
+            handleScanResult(codes[0].rawValue);
+            clearInterval(scannerInterval);
+          }
+        } catch {}
+      }, 500);
+    } else {
+      document.getElementById('scanner-result').style.display = 'block';
+      document.getElementById('scanner-result').innerHTML = '<p style="color:var(--orange)">⚠️ Il tuo browser non supporta il rilevamento automatico QR. Usa un browser moderno (Chrome/Edge) o inserisci manualmente il codice gruppo.</p><input class="field-input" id="manual-scan" placeholder="Inserisci codice gruppo..." style="margin-top:10px;width:100%"><button class="btn btn-primary" style="margin-top:8px" onclick="handleManualScan()">Cerca</button>';
+    }
+  } catch(err) { showToast('Impossibile accedere alla fotocamera: ' + err.message); }
+}
+
+function stopScanner() {
+  if (scannerStream) { scannerStream.getTracks().forEach(t => t.stop()); scannerStream = null; }
+  if (scannerInterval) { clearInterval(scannerInterval); scannerInterval = null; }
+  document.getElementById('scanner-video').srcObject = null;
+}
+
+function handleManualScan() {
+  const val = document.getElementById('manual-scan').value.trim();
+  if (val) handleScanResult(`GRUPPO:${val}`);
+}
+
+function handleScanResult(raw) {
+  stopScanner();
+  const res = document.getElementById('scanner-result');
+  res.style.display = 'block';
+  if (raw.startsWith('GRUPPO:')) {
+    const g = raw.replace('GRUPPO:','');
+    const recs = records.filter(r => r.gruppo === g);
+    const out = recs.filter(r => r.prelevaNome && !r.riconsegnaNome);
+    res.innerHTML = `<div>
+      <div style="font-weight:700;font-size:16px;margin-bottom:6px">📦 Gruppo: ${escHtml(g)}</div>
+      <div style="color:var(--gray2);font-size:13px;margin-bottom:10px">${recs.length} fascicoli — ${out.length} prelevati</div>
+      <table style="width:100%;font-size:13px;border-collapse:collapse">
+        <thead><tr>
+          <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--gray4);font-size:11px;color:var(--gray2)">Fascicolo</th>
+          <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--gray4);font-size:11px;color:var(--gray2)">Anno</th>
+          <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--gray4);font-size:11px;color:var(--gray2)">Stato</th>
+        </tr></thead>
+        <tbody>${recs.map(r => `<tr>
+          <td style="padding:4px 6px;border-bottom:1px solid var(--gray5)">${escHtml(r.numero)}</td>
+          <td style="padding:4px 6px;border-bottom:1px solid var(--gray5)">${r.anno||'—'}</td>
+          <td style="padding:4px 6px;border-bottom:1px solid var(--gray5)">${r.prelevaNome&&!r.riconsegnaNome?'<span style="color:var(--orange)">Prelevato</span>':'<span style="color:var(--green)">In archivio</span>'}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+  } else {
+    res.innerHTML = `<p>QR scansionato: <strong>${escHtml(raw)}</strong></p>`;
+  }
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ===== INIT =====
+render();
+</script>
+</body>
+</html>
