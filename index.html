@@ -13,98 +13,105 @@
     <style>
         :root { --bg: #0b0b0b; --card-bg: #161616; --accent: #e8c97a; --text-main: #f0ece0; --text-dim: #a09880; --border: #262626; --red: #e05555; --green: #5aad7a; --input-bg: #2a2a2a; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+
+        /* HEADER MOBILE */
+        .mobile-header { display: none; background: #111; padding: 15px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1000; justify-content: space-between; align-items: center; }
+        .menu-toggle { background: none; border: none; color: var(--accent); font-size: 24px; cursor: pointer; }
+
+        /* SIDEBAR ADATTIVA */
+        .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 24px; position: fixed; height: 100vh; z-index: 1100; transition: 0.3s; }
+        .main { margin-left: 260px; padding: 25px; width: calc(100% - 260px); transition: 0.3s; }
+
+        @media (max-width: 900px) {
+            .mobile-header { display: flex; }
+            .sidebar { left: -260px; width: 260px; }
+            .sidebar.open { left: 0; }
+            .main { margin-left: 0; width: 100%; padding: 15px; }
+            .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1050; }
+            .overlay.active { display: block; }
+        }
+
+        .nav-item { padding: 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); margin-bottom: 8px; font-weight: 500; }
+        .nav-item.active { background: rgba(232,201,122,0.1); color: var(--accent); }
+
+        /* CARDS E INPUT */
+        .content-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 18px; margin-bottom: 20px; }
+        input { background: var(--input-bg); border: 1px solid #444; padding: 14px; border-radius: 8px; color: white; width: 100%; margin-bottom: 12px; font-size: 16px; -webkit-appearance: none; }
+        input:focus { border-color: var(--accent); outline: none; }
         
-        /* Sidebar */
-        .sidebar { width: 260px; background: #111; border-right: 1px solid var(--border); padding: 24px; position: fixed; height: 100vh; z-index: 100; }
-        .main { margin-left: 260px; padding: 25px; width: calc(100% - 260px); }
-        @media (max-width: 900px) { .sidebar { display: none; } .main { margin-left: 0; width: 100%; padding: 15px; } }
+        .btn-add { background: var(--accent); color: black; border: none; padding: 15px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; }
         
-        .nav-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; color: var(--text-dim); margin-bottom: 8px; transition: 0.2s; }
-        .nav-item.active { background: rgba(232,201,122,0.1); color: var(--accent); font-weight: 600; }
+        /* TABELLA SCORREVOLE PER MOBILE */
+        .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; min-width: 300px; }
+        td { padding: 12px 5px; border-bottom: 1px solid #1f1f1f; }
         
-        /* Box Dati */
-        .content-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; }
+        .action-btn { background: none; border: none; font-size: 20px; padding: 8px; cursor: pointer; }
         
-        /* Input con colore chiaro per visibilità */
-        input { background: var(--input-bg); border: 1px solid #444; padding: 14px; border-radius: 8px; color: white; width: 100%; margin-bottom: 12px; font-size: 16px; }
-        input:focus { border-color: var(--accent); outline: none; background: #333; }
-        
-        .btn-add { background: var(--accent); color: black; border: none; padding: 15px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; text-transform: uppercase; }
-        .btn-scan { background: #333; color: white; border: 1px solid var(--accent); padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px; cursor: pointer; font-weight: 700; }
-        
-        /* Tabella Registro */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        td { padding: 12px 8px; border-bottom: 1px solid #1f1f1f; }
-        .action-btn { background: none; border: none; cursor: pointer; font-size: 18px; padding: 5px; transition: 0.2s; filter: grayscale(0.5); }
-        .action-btn:hover { filter: grayscale(0); transform: scale(1.2); }
-        
-        #reader { width: 100%; border-radius: 12px; overflow: hidden; margin-bottom: 20px; display: none; border: 2px solid var(--accent); }
-        #print-area { display: none; text-align: center; background: white; color: black; padding: 40px; }
-        @media print { body * { visibility: hidden; } #print-area, #print-area * { visibility: visible; } #print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; } }
+        #reader { width: 100%; max-width: 400px; margin: 0 auto 20px auto; display: none; border: 2px solid var(--accent); }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
-        <div style="font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 40px;">ARCHIVIO PRO</div>
-        <div class="nav-item active" onclick="showPage('dashboard')" id="n-dash">🏠 Dashboard</div>
-        <div class="nav-item" onclick="showPage('lista')" id="n-list">📂 Registro</div>
-        <div class="nav-item" onclick="showPage('qrpage')" id="n-qrpa">🖨️ Etichette QR</div>
-        <div class="nav-item" onclick="showPage('backup')" id="n-back">💾 Gestione Dati</div>
+    <div class="mobile-header">
+        <div style="font-weight: 700; color: var(--accent);">ARCHIVIO PRO</div>
+        <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+    </div>
+
+    <div class="overlay" onclick="toggleMenu()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div style="font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 30px;" class="pc-only">ARCHIVIO PRO</div>
+        <div class="nav-item active" onclick="nav('dashboard')">🏠 Dashboard</div>
+        <div class="nav-item" onclick="nav('lista')">📂 Registro</div>
+        <div class="nav-item" onclick="nav('qrpage')">🖨️ Etichette QR</div>
+        <div class="nav-item" onclick="nav('backup')">💾 Gestione Dati</div>
     </div>
 
     <div class="main">
-        <div id="page-dashboard" class="page active">
-            <h1>Riepilogo</h1>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px; margin-top:20px">
-                <div class="content-card">Totale: <h2 id="st-tot">0</h2></div>
-                <div class="content-card" style="border-left: 4px solid var(--red)">Fuori: <h2 id="st-fuori">0</h2></div>
-            </div>
+        <div id="page-dashboard" class="page">
+            <h2 style="margin-bottom:20px">Riepilogo</h2>
+            <div class="content-card">Totale: <h1 id="st-tot">0</h1></div>
+            <div class="content-card" style="border-left: 5px solid var(--red)">Fuori: <h1 id="st-fuori">0</h1></div>
         </div>
 
         <div id="page-lista" class="page" style="display:none">
-            <button class="btn-scan" onclick="startScan()">📷 SCANSIONA QR RIPIANO</button>
+            <button class="btn-add" style="margin-bottom:15px; background:#333; color:white; border:1px solid var(--accent)" onclick="startScan()">📷 SCANSIONA QR</button>
             <div id="reader"></div>
             
             <div class="content-card">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <input type="text" id="in-num" placeholder="Numero">
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="in-num" placeholder="Num.">
                     <input type="text" id="in-anno" placeholder="Anno">
                 </div>
                 <input type="text" id="in-rip" placeholder="Ripiano / Posizione">
-                <button class="btn-add" id="btn-main" onclick="aggiungi()">Salva Fascicolo</button>
+                <button class="btn-add" id="btn-main" onclick="aggiungi()">Salva</button>
             </div>
 
             <div class="content-card">
-                <input type="text" id="search" placeholder="🔍 Filtra o cerca..." onkeyup="filtra()">
-                <table><tbody id="main-table"></tbody></table>
+                <input type="text" id="search" placeholder="🔍 Cerca..." onkeyup="filtra()">
+                <div class="table-container">
+                    <table><tbody id="main-table"></tbody></table>
+                </div>
             </div>
         </div>
 
         <div id="page-qrpage" class="page" style="display:none">
-            <h1>Etichette QR</h1>
+            <h2>Etichette QR</h2>
             <div id="lista-qr-gruppi" style="margin-top:20px"></div>
         </div>
 
         <div id="page-backup" class="page" style="display:none">
-            <h1>Gestione Excel</h1>
-            <div class="content-card">
-                <h3>Scarica Backup</h3>
-                <button class="btn-add" style="background:#444; margin-top:10px" onclick="downloadExcel()">Esporta Excel (.csv)</button>
-            </div>
-            <div class="content-card">
-                <h3>Carica Dati</h3>
-                <input type="file" id="fileInput" accept=".csv">
-                <button class="btn-add" onclick="uploadExcel()">Importa da File</button>
-            </div>
+            <h2>Dati</h2>
+            <button class="btn-add" onclick="downloadExcel()" style="margin-bottom:15px">Esporta Excel</button>
+            <input type="file" id="fileInput" accept=".csv" style="margin-bottom:10px">
+            <button class="btn-add" style="background:#444" onclick="uploadExcel()">Importa Excel</button>
         </div>
     </div>
 
-    <div id="print-area"><h1 id="p-title"></h1><div id="qrcode" style="display:flex; justify-content:center; margin:30px"></div></div>
-
     <script>
-        // CONFIGURAZIONE FIREBASE
+        // Inserire qui la tua configurazione Firebase (API Key, ecc.)
         const firebaseConfig = {
             apiKey: "AIzaSyC4PA_joHtGFRudPUYBOQAMrOgVearBt3I",
             authDomain: "archivio-sentenze.firebaseapp.com",
@@ -119,7 +126,6 @@
         let currentData = [];
         let editId = null;
 
-        // Recupero dati
         db.on('value', (s) => {
             const d = s.val();
             currentData = d ? Object.keys(d).map(k => ({id: k, ...d[k]})) : [];
@@ -133,36 +139,39 @@
             const html = currentData.slice().reverse().map(f => `
                 <tr>
                     <td>
-                        <b style="font-size:16px">${f.numero}/${f.anno}</b><br>
-                        <small style="color:${f.stato==='Prelevato'?'var(--red)':'var(--text-dim)'}">
-                            ${f.gruppo} ${f.nota ? ' - PRELEVATO DA: '+f.nota : ''}
-                        </small>
+                        <b>${f.numero}/${f.anno}</b><br>
+                        <small style="color:${f.stato==='Prelevato'?'var(--red)':'var(--text-dim)'}">${f.gruppo} ${f.nota?'• '+f.nota:''}</small>
                     </td>
-                    <td style="text-align:right; white-space:nowrap">
-                        <button class="action-btn" title="Prestito" onclick="toggleStato('${f.id}','${f.stato}')">🤝</button>
-                        <button class="action-btn" title="Modifica" onclick="preparaModifica('${f.id}','${f.numero}','${f.anno}','${f.gruppo}')">✏️</button>
-                        <button class="action-btn" title="Elimina" onclick="elimina('${f.id}')">🗑️</button>
+                    <td style="text-align:right">
+                        <button class="action-btn" onclick="toggleStato('${f.id}','${f.stato}')">🤝</button>
+                        <button class="action-btn" onclick="preparaModifica('${f.id}','${f.numero}','${f.anno}','${f.gruppo}')">✏️</button>
+                        <button class="action-btn" onclick="elimina('${f.id}')">🗑️</button>
                     </td>
                 </tr>`).join('');
             document.getElementById('main-table').innerHTML = html;
-
-            const gruppi = [...new Set(currentData.map(x => x.gruppo))];
-            document.getElementById('lista-qr-gruppi').innerHTML = gruppi.map(g => `
-                <div class="content-card" style="display:flex; justify-content:space-between; align-items:center">
-                    <b>${g}</b><button class="btn-add" style="width:auto; padding:5px 15px" onclick="stampa('${g}')">STAMPA QR</button>
-                </div>`).join('');
         }
 
-        // --- FUNZIONI CORE ---
+        // --- GESTIONE MENU MOBILE ---
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.querySelector('.overlay').classList.toggle('active');
+        }
+
+        function nav(p) {
+            document.querySelectorAll('.page').forEach(page => page.style.display = 'none');
+            document.getElementById('page-' + p).style.display = 'block';
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if(window.innerWidth <= 900) toggleMenu();
+        }
+
+        // --- FUNZIONI OPERATIVE ---
         function aggiungi() {
             const n = document.getElementById('in-num').value, a = document.getElementById('in-anno').value, r = document.getElementById('in-rip').value;
-            if(!n || !a) return alert("Inserire Numero e Anno!");
-            
+            if(!n || !a) return alert("Compila i campi!");
             if(editId) {
                 db.child(editId).update({ numero: n, anno: a, gruppo: r || "Generale" });
                 editId = null;
                 document.getElementById('btn-main').innerText = "Salva Fascicolo";
-                document.getElementById('btn-main').style.background = "var(--accent)";
             } else {
                 db.push({ numero: n, anno: a, gruppo: r || "Generale", stato: "In sede", data: new Date().toISOString() });
             }
@@ -174,77 +183,19 @@
             document.getElementById('in-num').value = n;
             document.getElementById('in-anno').value = a;
             document.getElementById('in-rip').value = r;
-            document.getElementById('btn-main').innerText = "CONFERMA MODIFICA";
-            document.getElementById('btn-main').style.background = "#5aad7a";
-            window.scrollTo({top: 0, behavior: 'smooth'});
+            document.getElementById('btn-main').innerText = "CONFERMA";
+            window.scrollTo(0,0);
         }
 
-        function elimina(id) {
-            if(confirm("ATTENZIONE: Eliminare definitivamente questo fascicolo?")) {
-                db.child(id).remove();
-            }
-        }
+        function elimina(id) { if(confirm("Eliminare?")) db.child(id).remove(); }
 
         function toggleStato(id, attuale) {
             if(attuale === "In sede") {
-                const chi = prompt("Chi preleva questo fascicolo?");
+                const chi = prompt("Chi preleva?");
                 if(chi) db.child(id).update({ stato: "Prelevato", nota: chi });
             } else {
                 db.child(id).update({ stato: "In sede", nota: "" });
             }
-        }
-
-        // --- EXCEL ---
-        function downloadExcel() {
-            let csv = "Numero;Anno;Ripiano;Stato;Nota\n";
-            currentData.forEach(f => { csv += `${f.numero};${f.anno};${f.gruppo};${f.stato};${f.nota||""}\n`; });
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "archivio_completo.csv";
-            link.click();
-        }
-
-        function uploadExcel() {
-            const file = document.getElementById('fileInput').files[0];
-            if(!file) return alert("Seleziona un file!");
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const rows = e.target.result.split("\n");
-                rows.forEach((row, i) => {
-                    if(i > 0 && row.trim() !== "") {
-                        const c = row.split(";");
-                        db.push({ numero: c[0], anno: c[1], gruppo: c[2], stato: c[3] || "In sede", nota: c[4] || "", data: new Date().toISOString() });
-                    }
-                });
-                alert("Importazione riuscita!");
-            };
-            reader.readAsText(file);
-        }
-
-        // --- UTILS ---
-        function startScan() {
-            const r = document.getElementById('reader');
-            r.style.display = 'block';
-            const sc = new Html5Qrcode("reader");
-            sc.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
-                const url = new URL(txt);
-                const q = url.searchParams.get("cerca");
-                if(q) {
-                    document.getElementById('search').value = q;
-                    filtra();
-                    sc.stop();
-                    r.style.display = 'none';
-                }
-            }).catch(() => alert("Fotocamera non trovata"));
-        }
-
-        function showPage(p) {
-            document.querySelectorAll('.page').forEach(page => page.style.display = 'none');
-            document.getElementById('page-' + p).style.display = 'block';
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            const map = {'dashboard':'n-dash', 'lista':'n-list', 'qrpage':'n-qrpa', 'backup':'n-back'};
-            document.getElementById(map[p]).classList.add('active');
         }
 
         function filtra() {
@@ -252,13 +203,6 @@
             document.querySelectorAll('#main-table tr').forEach(tr => {
                 tr.style.display = tr.innerText.toLowerCase().includes(v) ? '' : 'none';
             });
-        }
-
-        function stampa(g) {
-            document.getElementById('p-title').innerText = "Ripiano: " + g;
-            document.getElementById('qrcode').innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), { text: window.location.origin + window.location.pathname + "?cerca=" + encodeURIComponent(g), width: 250, height: 250 });
-            setTimeout(() => { window.print(); }, 500);
         }
     </script>
 </body>
