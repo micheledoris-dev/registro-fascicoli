@@ -8,155 +8,83 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { background-color: #F5F5F7; font-family: -apple-system, system-ui, sans-serif; }
-        .apple-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.3); }
-        .input-apple { border-radius: 12px; border: 1px solid #d1d1d6; padding: 10px; outline: none; transition: all 0.2s; }
-        .input-apple:focus { border-color: #0071e3; box-shadow: 0 0 0 4px rgba(0,113,227,0.1); }
-        @media print { .no-print { display: none; } #printArea { display: block !important; } }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+        body { background-color: #F5F5F7; font-family: 'Inter', -apple-system, sans-serif; color: #1d1d1f; }
+        .glass { background: rgba(255, 255, 255, 0.72); backdrop-filter: saturate(180%) blur(20px); border: 1px solid rgba(255,255,255,0.3); }
+        .apple-shadow { box-shadow: 0 8px 30px rgba(0,0,0,0.04); }
+        .btn-apple { background-color: #0071E3; transition: all 0.2s ease; }
+        .btn-apple:hover { background-color: #0077ED; transform: scale(1.02); }
+        .btn-apple:active { transform: scale(0.98); }
+        @media print { .no-print { display: none !important; } #printArea { display: block !important; } }
     </style>
 </head>
-<body class="p-4 md:p-10">
+<body class="p-4 md:p-8">
 
-<div class="max-w-6xl mx-auto no-print">
-    <header class="flex justify-between items-center mb-10">
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900">Gestione Archivio</h1>
-        <div class="flex gap-2">
-            <button onclick="document.getElementById('fileImport').click()" class="bg-white border text-sm px-4 py-2 rounded-full shadow-sm hover:bg-gray-50">Importa Excel</button>
-            <input type="file" id="fileImport" class="hidden" accept=".xlsx" onchange="importExcel(event)">
-            <button onclick="exportExcel()" class="bg-black text-white text-sm px-4 py-2 rounded-full hover:opacity-80">Scarica Excel</button>
+<div class="max-w-7xl mx-auto no-print">
+    <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+        <div>
+            <h1 class="text-4xl font-semibold tracking-tight">Archivio Digitale</h1>
+            <p class="text-gray-500 text-sm">Gestione fascicoli con doppia sicurezza</p>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="document.getElementById('fileIn').click()" class="bg-white border px-5 py-2 rounded-full text-sm font-medium apple-shadow hover:bg-gray-50">Importa Excel</button>
+            <input type="file" id="fileIn" class="hidden" accept=".xlsx" onchange="importaExcel(event)">
+            <button onclick="esportaExcel()" class="bg-black text-white px-5 py-2 rounded-full text-sm font-medium apple-shadow">Esporta Excel</button>
         </div>
     </header>
 
-    <div class="apple-card p-6 shadow-lg mb-8">
+    <div class="glass p-6 rounded-[24px] apple-shadow mb-8">
+        <h2 class="text-lg font-semibold mb-4 text-blue-600">Inserisci Nuovo Fascicolo</h2>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input id="f_num" type="text" placeholder="N. Fascicolo" class="input-apple">
-            <input id="f_anno" type="text" placeholder="Anno" class="input-apple">
-            <input id="f_reg" type="text" placeholder="N. Registro" class="input-apple">
-            <input id="f_gruppo" type="text" placeholder="Gruppo" class="input-apple">
-            <input id="f_note" type="text" placeholder="Note" class="input-apple col-span-1 md:col-span-2">
-            <input id="f_chi" type="text" placeholder="Nome chi preleva/ripone" class="input-apple">
-            <button onclick="aggiungiFascicolo()" class="bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition">Salva Fascicolo</button>
+            <input id="num" type="text" placeholder="Numero Fascicolo" class="p-3 rounded-xl border bg-white/50 focus:ring-2 focus:ring-blue-400 outline-none">
+            <input id="anno" type="text" placeholder="Anno" class="p-3 rounded-xl border bg-white/50 focus:ring-2 focus:ring-blue-400 outline-none">
+            <input id="reg" type="text" placeholder="Numero Registro" class="p-3 rounded-xl border bg-white/50 focus:ring-2 focus:ring-blue-400 outline-none">
+            <input id="gruppo" type="text" placeholder="Gruppo di appartenenza" class="p-3 rounded-xl border bg-white/50 focus:ring-2 focus:ring-blue-400 outline-none">
+            <input id="note" type="text" placeholder="Note aggiuntive" class="p-3 rounded-xl border bg-white/50 focus:ring-2 focus:ring-blue-400 outline-none col-span-1 md:col-span-2">
+            <input id="preleva" type="text" placeholder="Nome chi preleva" class="p-3 rounded-xl border bg-white/50 focus:ring-2 focus:ring-blue-400 outline-none">
+            <input id="ripone" type="text" placeholder="Nome chi ripone" class="p-3 rounded-xl border bg-white/50 focus:ring-2 focus:ring-blue-400 outline-none">
+            <button onclick="aggiungiRecord()" class="btn-apple text-white font-semibold py-3 rounded-xl col-span-1 md:col-span-4">Salva nel Database</button>
         </div>
     </div>
 
-    <div class="apple-card shadow-lg overflow-x-auto">
-        <table class="w-full text-left">
-            <thead class="bg-gray-50 border-b">
-                <tr>
-                    <th class="p-4">Fascicolo/Anno</th>
-                    <th class="p-4">Registro</th>
-                    <th class="p-4">Gruppo</th>
-                    <th class="p-4">Note</th>
-                    <th class="p-4 text-right">Azioni</th>
-                </tr>
-            </thead>
-            <tbody id="tabellaCorpo"></tbody>
-        </table>
+    <div class="glass rounded-[24px] apple-shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-gray-100/50">
+                    <tr>
+                        <th class="p-4 text-xs uppercase text-gray-400 font-bold">Fascicolo/Anno</th>
+                        <th class="p-4 text-xs uppercase text-gray-400 font-bold">Registro</th>
+                        <th class="p-4 text-xs uppercase text-gray-400 font-bold">Gruppo</th>
+                        <th class="p-4 text-xs uppercase text-gray-400 font-bold">Log Prelievo/Riposizione</th>
+                        <th class="p-4 text-xs uppercase text-gray-400 font-bold text-right">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="listaFascicoli" class="divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
-<div id="printArea" class="hidden text-center p-20">
-    <h1 id="printTitle" class="text-5xl font-bold mb-4"></h1>
-    <div id="qrcode" class="flex justify-center my-10"></div>
-    <p class="text-2xl text-gray-600">Archivio Digitale - Etichetta Gruppo</p>
+<div id="printArea" class="hidden bg-white min-h-screen p-10 text-center">
+    <div class="border-4 border-black p-20 inline-block rounded-3xl">
+        <h1 id="printGruppo" class="text-6xl font-bold mb-10 text-uppercase tracking-tighter"></h1>
+        <div id="qrcode" class="flex justify-center mb-10"></div>
+        <p class="text-2xl font-light">Etichetta Archivio Digitale</p>
+    </div>
 </div>
 
 <script>
-    let archivio = JSON.parse(localStorage.getItem('mioArchivio')) || [];
+    let db = JSON.parse(localStorage.getItem('archivio_digitale')) || [];
 
-    function aggiungiFascicolo() {
-        const f = {
+    function salva() {
+        localStorage.setItem('archivio_digitale', JSON.stringify(db));
+        render();
+    }
+
+    function aggiungiRecord() {
+        const record = {
             id: Date.now(),
-            numero: document.getElementById('f_num').value,
-            anno: document.getElementById('f_anno').value,
-            registro: document.getElementById('f_reg').value,
-            gruppo: document.getElementById('f_gruppo').value,
-            note: document.getElementById('f_note').value,
-            utente: document.getElementById('f_chi').value,
-            data: new Date().toLocaleDateString()
-        };
-        if(!f.numero) return alert("Inserisci almeno il numero!");
-        archivio.push(f);
-        salvaERicarica();
-    }
-
-    function cancellaFascicolo(id) {
-        // DOPPIA SICUREZZA
-        if (confirm("Sicuro di voler cancellare? (1/2)")) {
-            const conferma = prompt("Per confermare definitivamente, scrivi ELIMINA (2/2):");
-            if (conferma === "ELIMINA") {
-                archivio = archivio.filter(item => item.id !== id);
-                salvaERicarica();
-            }
-        }
-    }
-
-    function modificaFascicolo(id) {
-        if (confirm("Vuoi modificare questo fascicolo? (1/2)")) {
-            const conferma = prompt("Scrivi MODIFICA per procedere (2/2):");
-            if (conferma === "MODIFICA") {
-                const f = archivio.find(item => item.id === id);
-                document.getElementById('f_num').value = f.numero;
-                document.getElementById('f_anno').value = f.anno;
-                document.getElementById('f_gruppo').value = f.gruppo;
-                // Rimuoviamo il vecchio per sovrascriverlo al prossimo salvataggio
-                archivio = archivio.filter(item => item.id !== id);
-                salvaERicarica();
-            }
-        }
-    }
-
-    function stampaGruppo(nomeGruppo) {
-        document.getElementById('printTitle').innerText = "Gruppo: " + nomeGruppo;
-        document.getElementById('qrcode').innerHTML = "";
-        new QRCode(document.getElementById("qrcode"), { text: nomeGruppo, width: 300, height: 300 });
-        setTimeout(() => { window.print(); }, 500);
-    }
-
-    function salvaERicarica() {
-        localStorage.setItem('mioArchivio', JSON.stringify(archivio));
-        renderTable();
-    }
-
-    function renderTable() {
-        const corpo = document.getElementById('tabellaCorpo');
-        corpo.innerHTML = archivio.map(f => `
-            <tr class="border-b hover:bg-gray-50/50 transition">
-                <td class="p-4 font-semibold">${f.numero} / ${f.anno}</td>
-                <td class="p-4">${f.registro}</td>
-                <td class="p-4"><span class="bg-gray-200 px-2 py-1 rounded-md text-sm">${f.gruppo}</span></td>
-                <td class="p-4 text-sm text-gray-500">${f.note} <br> <small>${f.utente} - ${f.data}</small></td>
-                <td class="p-4 text-right space-x-2">
-                    <button onclick="stampaGruppo('${f.gruppo}')" class="text-blue-500 text-sm">QR</button>
-                    <button onclick="modificaFascicolo(${f.id})" class="text-gray-500 text-sm">Modifica</button>
-                    <button onclick="cancellaFascicolo(${f.id})" class="text-red-500 text-sm font-bold">X</button>
-                </td>
-            </tr>
-        `).join('');
-    }
-
-    function exportExcel() {
-        const ws = XLSX.utils.json_to_sheet(archivio);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Archivio");
-        XLSX.writeFile(wb, "archivio_fascicoli.xlsx");
-    }
-
-    function importExcel(event) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
-            const firstSheet = workbook.SheetNames[0];
-            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
-            archivio = jsonData;
-            salvaERicarica();
-        };
-        reader.readAsArrayBuffer(event.target.files[0]);
-    }
-
-    renderTable();
-</script>
-
-</body>
-</html>
+            numero: document.getElementById('num').value,
+            anno: document.getElementById('anno').value,
+            registro: document.getElementById('reg').value,
+            gruppo: document.getElementById('gruppo').value,
