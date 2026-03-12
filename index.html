@@ -3,117 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archivio Pro v7.6 - Stampa A4</title>
+    <title>Archivio v7.7 - Stable</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        body { background-color: #F0F2F5; font-family: sans-serif; }
-        .stat-card { background: white; border-radius: 20px; padding: 20px; border-bottom: 4px solid #3B82F6; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
-        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        body { background-color: #f3f4f6; }
+        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 999; align-items: center; justify-content: center; }
         #modal.active { display: flex; }
-        #reader-container { display: none; max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 20px; }
-
-        /* Stili per la stampa A4 */
         @media print {
-            body * { visibility: hidden; }
-            #print-zone, #print-zone * { visibility: visible; }
-            #print-zone {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                display: flex !important;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                text-align: center;
-                background: white;
-            }
             .no-print { display: none !important; }
+            .print-only { display: block !important; position: absolute; top:0; left:0; width:100%; text-align:center; }
         }
-        #print-zone { display: none; }
+        .print-only { display: none; }
     </style>
 </head>
-<body class="p-4 lg:p-10">
+<body class="p-4">
 
-<div id="print-zone">
-    <div id="print-content" class="w-full">
-        <h1 id="p-ripiano" class="text-[80px] font-black leading-tight uppercase mb-4 text-gray-900"></h1>
-        <div id="p-gruppo" class="text-[120px] font-black border-t-8 border-black pt-8 uppercase text-blue-800"></div>
-        <p class="text-2xl mt-20 text-gray-400">Archivio Fascicoli - Documentazione Logistica</p>
-    </div>
+<div id="print-area" class="print-only">
+    <div style="font-size: 80px; font-weight: 900; margin-top: 100px;" id="p-rip"></div>
+    <div style="font-size: 140px; font-weight: 900; border-top: 10px solid black; padding-top: 50px;" id="p-gru"></div>
 </div>
 
 <div class="max-w-7xl mx-auto no-print">
-    <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-        <h1 class="text-3xl font-black text-gray-800">📁 Archivio Pro</h1>
-        <div class="flex flex-wrap gap-2 justify-center">
-            <button onclick="startScanner()" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold shadow-lg">📸 SCANNER</button>
-            <button onclick="document.getElementById('file-in').click()" class="bg-white border px-4 py-2 rounded-xl font-semibold">Importa</button>
-            <button onclick="exportExcel()" class="bg-white border px-4 py-2 rounded-xl font-semibold">Esporta</button>
-            <button onclick="openModal()" class="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold shadow-blue-200 shadow-xl">＋ NUOVO</button>
+    <div class="flex justify-between items-center mb-6 bg-white p-6 rounded-2xl shadow-sm">
+        <h1 class="text-2xl font-bold">📁 Archivio Fascicoli</h1>
+        <div class="flex gap-2">
+            <button onclick="document.getElementById('file-in').click()" class="bg-gray-200 px-4 py-2 rounded-lg font-bold text-sm">IMPORTA</button>
+            <button onclick="openModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg hover:bg-blue-700">＋ NUOVO</button>
         </div>
-    </header>
-
-    <div id="reader-container" class="mb-10 shadow-2xl">
-        <div class="flex justify-between mb-4"><h3 class="font-bold">Scannerizza</h3><button onclick="stopScanner()" class="text-red-500 font-bold">CHIUDI</button></div>
-        <div id="reader"></div>
     </div>
 
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div class="stat-card"><p class="text-[10px] font-bold text-gray-400 uppercase">Totali</p><h3 id="stat-total" class="text-3xl font-black">0</h3></div>
-        <div class="stat-card !border-orange-500"><p class="text-[10px] font-bold text-gray-400 uppercase">Prelevati</p><h3 id="stat-out" class="text-3xl font-black">0</h3></div>
-        <div class="stat-card !border-green-500"><p class="text-[10px] font-bold text-gray-400 uppercase">In Archivio</p><h3 id="stat-in" class="text-3xl font-black">0</h3></div>
-        <div class="stat-card !border-purple-500"><p class="text-[10px] font-bold text-gray-400 uppercase">Gruppi Unici</p><h3 id="stat-groups" class="text-3xl font-black">0</h3></div>
-    </div>
-
-    <div class="bg-white p-4 rounded-2xl mb-8 shadow-sm flex items-center gap-4">
-        <span class="text-xl">🔍</span>
-        <input type="text" id="search" placeholder="Cerca..." onkeyup="filter()" class="w-full outline-none text-lg">
-    </div>
-
-    <div class="bg-white rounded-[30px] shadow-xl overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-                <thead class="bg-gray-50 border-b text-gray-400 font-bold text-[10px] uppercase">
-                    <tr>
-                        <th class="p-6">Fascicolo</th>
-                        <th class="p-6">Registro</th>
-                        <th class="p-6">Posizione</th>
-                        <th class="p-6">Stato</th>
-                        <th class="p-6 text-right">Azioni</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body" class="divide-y divide-gray-50 bg-white"></tbody>
-            </table>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-5 rounded-xl border-b-4 border-blue-500 shadow-sm">
+            <p class="text-xs font-bold text-gray-400 uppercase">Totali</p>
+            <h3 id="stat-total" class="text-2xl font-black">0</h3>
         </div>
+        <div class="bg-white p-5 rounded-xl border-b-4 border-orange-500 shadow-sm">
+            <p class="text-xs font-bold text-gray-400 uppercase">Prelevati</p>
+            <h3 id="stat-out" class="text-2xl font-black text-orange-600">0</h3>
+        </div>
+        <div class="bg-white p-5 rounded-xl border-b-4 border-green-500 shadow-sm">
+            <p class="text-xs font-bold text-gray-400 uppercase">In Archivio</p>
+            <h3 id="stat-in" class="text-2xl font-black text-green-600">0</h3>
+        </div>
+        <div class="bg-white p-5 rounded-xl border-b-4 border-purple-500 shadow-sm">
+            <p class="text-xs font-bold text-gray-400 uppercase">Gruppi Reali</p>
+            <h3 id="stat-groups" class="text-2xl font-black text-purple-600">0</h3>
+        </div>
+    </div>
+
+    <input type="text" id="search" placeholder="Cerca posizione o numero..." onkeyup="filter()" class="w-full p-4 rounded-xl border mb-6 shadow-inner outline-none focus:ring-2 focus:ring-blue-500">
+
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-gray-100 text-[10px] font-bold uppercase text-gray-500">
+                <tr>
+                    <th class="p-4">Fascicolo</th>
+                    <th class="p-4">Posizione</th>
+                    <th class="p-4">Stato</th>
+                    <th class="p-4 text-right">Azioni</th>
+                </tr>
+            </thead>
+            <tbody id="table-body" class="divide-y divide-gray-100"></tbody>
+        </table>
     </div>
 </div>
 
 <div id="modal">
-    <div class="bg-white p-8 rounded-[40px] w-full max-w-xl mx-4 shadow-2xl">
-        <h2 class="text-2xl font-black mb-6">Gestione Fascicolo</h2>
+    <div class="bg-white p-8 rounded-3xl w-full max-w-lg mx-4 shadow-2xl">
+        <h2 class="text-xl font-bold mb-6">Dettagli Fascicolo</h2>
         <div class="grid grid-cols-2 gap-4">
-            <input type="text" id="m-num" placeholder="Numero" class="p-4 bg-gray-50 rounded-2xl outline-none">
-            <input type="text" id="m-anno" placeholder="Anno" class="p-4 bg-gray-50 rounded-2xl outline-none">
-            <input type="text" id="m-reg" placeholder="Registro" class="p-4 bg-gray-50 rounded-2xl outline-none">
-            <input type="text" id="m-data" readonly class="p-4 bg-gray-100 rounded-2xl text-gray-400">
-            <input type="text" id="m-ripiano" placeholder="Ripiano" class="p-4 bg-gray-50 rounded-2xl outline-none ring-1 ring-blue-100">
-            <input type="text" id="m-gruppo" placeholder="Gruppo" class="p-4 bg-gray-50 rounded-2xl outline-none ring-1 ring-blue-100">
-            <select id="m-stato" class="p-4 bg-gray-50 rounded-2xl outline-none col-span-2">
-                <option value="In archivio">In archivio</option>
-                <option value="Prelevato">Prelevato</option>
+            <input type="text" id="m-num" placeholder="Numero" class="p-3 border rounded-xl">
+            <input type="text" id="m-anno" placeholder="Anno" class="p-3 border rounded-xl">
+            <input type="text" id="m-reg" placeholder="Registro" class="p-3 border rounded-xl">
+            <input type="text" id="m-rip" placeholder="Ripiano" class="p-3 border rounded-xl bg-blue-50">
+            <input type="text" id="m-gru" placeholder="Gruppo" class="p-3 border rounded-xl bg-blue-50">
+            <select id="m-stato" class="p-3 border rounded-xl">
+                <option value="In archivio">📦 In archivio</option>
+                <option value="Prelevato">🏃 Prelevato</option>
             </select>
         </div>
-        <div class="flex justify-end gap-4 mt-10">
-            <button onclick="closeModal()" class="font-bold text-gray-400">Annulla</button>
-            <button onclick="save()" class="bg-blue-600 text-white px-10 py-3 rounded-2xl font-bold">SALVA</button>
+        <div class="flex justify-end gap-3 mt-8">
+            <button onclick="closeModal()" class="text-gray-400 font-bold">Chiudi</button>
+            <button onclick="save()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold">SALVA</button>
         </div>
     </div>
 </div>
@@ -128,4 +104,108 @@
       projectId: "archivio-sentenze",
       storageBucket: "archivio-sentenze.firebasestorage.app",
       messagingSenderId: "139447095387",
-      appId: "1:1394470
+      appId: "1:139447095387:web:32d031468fa4c74a83af7e"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database().ref('sentenze');
+    let fullData = [];
+    let editKey = null;
+
+    db.on('value', (snap) => {
+        const val = snap.val();
+        fullData = val ? Object.keys(val).map(k => ({...val[k], fbKey: k})) : [];
+        fullData.sort((a,b) => new Date(b.dataRaw || 0) - new Date(a.dataRaw || 0));
+        render();
+        stats();
+    });
+
+    function render() {
+        document.getElementById('table-body').innerHTML = fullData.map(i => `
+            <tr class="hover:bg-gray-50">
+                <td class="p-4 font-bold text-blue-600">${i.num || ''}/${i.anno || ''}</td>
+                <td class="p-4"><b>${i.ripiano || '-'}</b><br><span class="text-xs text-gray-400">${i.gruppo || '-'}</span></td>
+                <td class="p-4 text-xs font-bold uppercase ${i.stato === 'Prelevato' ? 'text-orange-500' : 'text-green-600'}">${i.stato || 'In archivio'}</td>
+                <td class="p-4 text-right space-x-3">
+                    <button onclick="printA4('${i.ripiano}', '${i.gruppo}')" class="text-lg">🖨️</button>
+                    <button onclick="openModal('${i.fbKey}')" class="text-lg">✏️</button>
+                    <button onclick="del('${i.fbKey}')" class="text-lg text-red-300">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function stats() {
+        document.getElementById('stat-total').innerText = fullData.length;
+        document.getElementById('stat-out').innerText = fullData.filter(x => x.stato === 'Prelevato').length;
+        document.getElementById('stat-in').innerText = fullData.filter(x => x.stato !== 'Prelevato').length;
+        
+        // CONTEGGIO GRUPPI REALI
+        const gUnici = [...new Set(fullData.map(x => x.gruppo ? x.gruppo.toString().trim() : "").filter(g => g !== "" && g !== "-" && g !== "0"))];
+        document.getElementById('stat-groups').innerText = gUnici.length;
+    }
+
+    function openModal(key = null) {
+        editKey = key;
+        if (key) {
+            const i = fullData.find(x => x.fbKey === key);
+            document.getElementById('m-num').value = i.num || "";
+            document.getElementById('m-anno').value = i.anno || "";
+            document.getElementById('m-reg').value = i.reg || "";
+            document.getElementById('m-rip').value = i.ripiano || "";
+            document.getElementById('m-gru').value = i.gruppo || "";
+            document.getElementById('m-stato').value = i.stato || "In archivio";
+        } else {
+            document.querySelectorAll('#modal input').forEach(el => el.value = "");
+        }
+        document.getElementById('modal').classList.add('active');
+    }
+
+    function closeModal() { document.getElementById('modal').classList.remove('active'); }
+
+    function save() {
+        const d = {
+            num: document.getElementById('m-num').value,
+            anno: document.getElementById('m-anno').value,
+            reg: document.getElementById('m-reg').value,
+            ripiano: document.getElementById('m-rip').value,
+            gruppo: document.getElementById('m-gru').value,
+            stato: document.getElementById('m-stato').value,
+            dataRaw: new Date().toISOString()
+        };
+        if (editKey) db.child(editKey).update(d);
+        else db.push(d);
+        closeModal();
+    }
+
+    function printA4(r, g) {
+        document.getElementById('p-rip').innerText = r;
+        document.getElementById('p-gru').innerText = g;
+        window.print();
+    }
+
+    function importXLS(e) {
+        const r = new FileReader();
+        r.onload = (evt) => {
+            const data = new Uint8Array(evt.target.result);
+            const wb = XLSX.read(data, {type: 'array'});
+            const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+            rows.slice(1).forEach(row => {
+                if(row[0]) db.push({
+                    num: row[0]||"", anno: row[1]||"", reg: row[2]||"", 
+                    ripiano: row[3]||"", gruppo: row[4]||"", 
+                    stato: row[5]||"In archivio", dataRaw: new Date().toISOString()
+                });
+            });
+        };
+        r.readAsArrayBuffer(e.target.files[0]);
+    }
+
+    function filter() {
+        const v = document.getElementById('search').value.toLowerCase();
+        document.querySelectorAll('#table-body tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none');
+    }
+
+    function del(k) { if(confirm("Eliminare?")) db.child(k).remove(); }
+</script>
+</body>
+</html>
