@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archivio Pro v7.3</title>
+    <title>Archivio Pro v7.4 - Stabile</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -29,6 +29,7 @@
             <button onclick="startScanner()" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold shadow-lg">📸 SCANNER</button>
             <button onclick="document.getElementById('file-in').click()" class="bg-white border px-4 py-2 rounded-xl font-semibold">Importa</button>
             <button onclick="exportExcel()" class="bg-white border px-4 py-2 rounded-xl font-semibold">Esporta</button>
+            <button onclick="clearDatabase()" class="bg-red-50 text-red-500 px-4 py-2 rounded-xl font-bold text-xs hover:bg-red-100 transition">🗑️ SVUOTA DB</button>
             <button onclick="openModal()" class="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold shadow-blue-200 shadow-xl hover:scale-105 transition">＋ NUOVO</button>
         </div>
     </header>
@@ -79,8 +80,7 @@
                         <th class="p-6 text-right">Azioni</th>
                     </tr>
                 </thead>
-                <tbody id="table-body" class="divide-y divide-gray-50 bg-white">
-                    </tbody>
+                <tbody id="table-body" class="divide-y divide-gray-50 bg-white"></tbody>
             </table>
         </div>
     </div>
@@ -105,7 +105,7 @@
                 <option value="In archivio">📦 In archivio</option>
                 <option value="Prelevato">🏃 Prelevato</option>
             </select>
-            <input type="text" id="m-prelevatore" placeholder="Chi ha prelevato?" class="p-4 bg-orange-50 rounded-2xl outline-none ring-1 ring-orange-200 hidden">
+            <input type="text" id="m-prelevatore" placeholder="Nome prelevatore" class="p-4 bg-orange-50 rounded-2xl outline-none ring-1 ring-orange-200 hidden">
         </div>
         <div class="flex justify-end gap-4 mt-10">
             <button onclick="closeModal()" class="font-bold text-gray-400">Annulla</button>
@@ -117,7 +117,6 @@
 <input type="file" id="file-in" class="hidden" onchange="importXLS(event)">
 
 <script>
-    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyC4PA_joHtGFRudPUYBOQAMrOgVearBt3I",
       authDomain: "archivio-sentenze.firebaseapp.com",
@@ -133,7 +132,6 @@
     let editingKey = null;
     let scanner = null;
 
-    // Sincronizzazione Realtime
     db.on('value', (snap) => {
         const val = snap.val();
         fullData = val ? Object.keys(val).map(k => ({...val[k], fbKey: k})) : [];
@@ -169,7 +167,10 @@
         document.getElementById('stat-total').innerText = fullData.length;
         document.getElementById('stat-out').innerText = fullData.filter(x => x.stato === 'Prelevato').length;
         document.getElementById('stat-in').innerText = fullData.filter(x => x.stato !== 'Prelevato').length;
-        document.getElementById('stat-groups').innerText = [...new Set(fullData.map(x => x.gruppo))].length;
+        
+        // Fix conteggio gruppi: ignora i campi vuoti e i "-"
+        const gruppiUnici = [...new Set(fullData.map(x => x.gruppo ? x.gruppo.trim() : "").filter(g => g !== "" && g !== "-"))];
+        document.getElementById('stat-groups').innerText = gruppiUnici.length;
     }
 
     function updateDatalists() {
@@ -226,23 +227,29 @@
         closeModal();
     }
 
+    function clearDatabase() {
+        if (confirm("⚠️ ATTENZIONE: Questa azione cancellerà TUTTI i dati nel cloud. Vuoi procedere?")) {
+            if (confirm("Sei assolutamente sicuro? Non potrai tornare indietro.")) {
+                db.remove().then(() => alert("Database svuotato."));
+            }
+        }
+    }
+
     function importXLS(e) {
         const reader = new FileReader();
         reader.onload = (evt) => {
             const data = new Uint8Array(evt.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
             const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
-            if (confirm("Importare " + (rows.length - 1) + " righe?")) {
-                rows.slice(1).forEach(r => {
-                    if(r[0]) db.push({
-                        num: r[0] || "", anno: r[1] || "", reg: r[2] || "", 
-                        ripiano: r[3] || "-", gruppo: r[4] || "-", 
-                        stato: r[5] || "In archivio", 
-                        data: r[6] || new Date().toLocaleDateString(),
-                        dataRaw: new Date().toISOString()
-                    });
+            rows.slice(1).forEach(r => {
+                if(r[0]) db.push({
+                    num: r[0] || "", anno: r[1] || "", reg: r[2] || "", 
+                    ripiano: r[3] || "-", gruppo: r[4] || "-", 
+                    stato: r[5] || "In archivio", 
+                    data: r[6] || new Date().toLocaleDateString(),
+                    dataRaw: new Date().toISOString()
                 });
-            }
+            });
         };
         reader.readAsArrayBuffer(e.target.files[0]);
     }
