@@ -3,46 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archivio Pro v7.1 - Fix</title>
+    <title>Archivio Fascicoli v7.2</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.1/qrcode.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        body { background-color: #F8F9FA; font-family: sans-serif; }
-        .stat-card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid #3B82F6; }
-        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 50; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        body { background-color: #F3F4F6; font-family: ui-sans-serif, system-ui; }
+        .stat-card { background: white; border-radius: 12px; padding: 15px; shadow: sm; border-top: 4px solid #3B82F6; }
+        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
         #modal.active { display: flex; }
-        #reader { width: 100%; max-width: 400px; margin: auto; }
-        @media print { .no-print { display: none !important; } #print-area { display: block !important; } }
     </style>
 </head>
-<body class="p-4 md:p-10">
+<body class="p-4">
 
-<div class="max-w-7xl mx-auto no-print">
-    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
-        <div>
-            <h1 class="text-3xl font-extrabold text-gray-900">📁 Archivio Fascicoli Pro</h1>
-            <p class="text-gray-500 mt-1">Gestione avanzata e scanner QR</p>
+<div class="max-w-7xl mx-auto">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="stat-card">
+            <p class="text-xs font-bold text-gray-400 uppercase">Totali</p>
+            <h3 id="stat-total" class="text-2xl font-black">0</h3>
         </div>
-        <div class="flex flex-wrap gap-3">
-            <button onclick="startScanner()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition">📸 SCANNER QR</button>
-            <button onclick="document.getElementById('file-in').click()" class="bg-white border border-gray-200 px-5 py-2.5 rounded-xl font-semibold hover:bg-gray-50 transition">Importa</button>
-            <button onclick="exportExcel()" class="bg-white border border-gray-200 px-5 py-2.5 rounded-xl font-semibold hover:bg-gray-50 transition">Esporta</button>
-            <button onclick="openModal()" class="bg-blue-600 text-white px-8 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg">＋ NUOVO</button>
+        <div class="stat-card !border-orange-500">
+            <p class="text-xs font-bold text-gray-400 uppercase">Prelevati</p>
+            <h3 id="stat-out" class="text-2xl font-black">0</h3>
         </div>
-    </header>
-
-    <div id="reader-container" class="mb-8 hidden bg-black p-4 rounded-3xl relative">
-        <button onclick="stopScanner()" class="absolute top-4 right-4 text-white font-bold z-10 bg-red-500 w-8 h-8 rounded-full">✕</button>
-        <div id="reader"></div>
+        <div class="stat-card !border-green-500">
+            <p class="text-xs font-bold text-gray-400 uppercase">In Sede</p>
+            <h3 id="stat-in" class="text-2xl font-black">0</h3>
+        </div>
+        <div class="stat-card !border-purple-500">
+            <p class="text-xs font-bold text-gray-400 uppercase">Gruppi</p>
+            <h3 id="stat-groups" class="text-2xl font-black">0</h3>
+        </div>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div class="stat-card">
-            <p class="text-xs font-bold text-gray-400 uppercase">Fascicoli Totali</p>
-            <h3 id="stat-total" class="text-3xl font-black text-gray-800">
+    <div class="flex flex-wrap gap-2 mb-6">
+        <button onclick="openModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold shadow-md">＋ NUOVO</button>
+        <button onclick="document.getElementById('file-in').click()" class="bg-white border px-4 py-2 rounded-lg text-sm font-medium">Importa Excel</button>
+        <button onclick="exportExcel()" class="bg-white border px-4 py-2 rounded-lg text-sm font-medium">Esporta</button>
+        <input type="text" id="search" placeholder="Cerca..." onkeyup="filter()" class="flex-1 p-2 border rounded-lg outline-none">
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-gray-100 text-gray-600 font-bold uppercase text-[10px]">
+                    <tr>
+                        <th class="p-4">Fascicolo</th>
+                        <th class="p-4">Posizione (R/G)</th>
+                        <th class="p-4">Stato</th>
+                        <th class="p-4">Prelevatore</th>
+                        <th class="p-4">Data</th>
+                        <th class="p-4 text-right">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body" class="divide-y divide-gray-100 font-medium">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="modal">
+    <div class="bg-white p-6 rounded-2xl w-full max-w-md mx-4">
+        <h2 class="text-xl font-bold mb-4">Dettagli Fascicolo</h2>
+        <div class="grid grid-cols-2 gap-3">
+            <input type="text" id="m-num" placeholder="Numero" class="p-2 border rounded-lg">
+            <input type="text" id="m-anno" placeholder="Anno" class="p-2 border rounded-lg">
+            <input type="text" id="m-reg" placeholder="Registro" class="p-2 border rounded-lg">
+            <input type="text" id="m-data" readonly class="p-2 bg-gray-50 border rounded-lg text-gray-400">
+            <input type="text" id="m-ripiano" placeholder="Ripiano" class="p-2 border rounded-lg">
+            <input type="text" id="m-gruppo" placeholder="Gruppo" class="p-2 border rounded-lg">
+            <select id="m-stato" class="p-2 border rounded-lg col-span-2">
+                <option value="In archivio">In archivio</option>
+                <option value="Prelevato">Prelevato</option>
+            </select>
+            <input type="text" id="m-prelevatore" placeholder="Nome chi preleva" class="p-2 border rounded-lg col-span-2">
+        </div>
+        <div class="flex justify-end gap-2 mt-6">
+            <button onclick="closeModal()" class="
