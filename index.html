@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archivio Pro v7.4 - Stabile</title>
+    <title>Archivio Pro v7.5</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -29,7 +29,6 @@
             <button onclick="startScanner()" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold shadow-lg">📸 SCANNER</button>
             <button onclick="document.getElementById('file-in').click()" class="bg-white border px-4 py-2 rounded-xl font-semibold">Importa</button>
             <button onclick="exportExcel()" class="bg-white border px-4 py-2 rounded-xl font-semibold">Esporta</button>
-            <button onclick="clearDatabase()" class="bg-red-50 text-red-500 px-4 py-2 rounded-xl font-bold text-xs hover:bg-red-100 transition">🗑️ SVUOTA DB</button>
             <button onclick="openModal()" class="bg-blue-600 text-white px-8 py-2 rounded-xl font-bold shadow-blue-200 shadow-xl hover:scale-105 transition">＋ NUOVO</button>
         </div>
     </header>
@@ -45,25 +44,25 @@
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <div class="stat-card">
             <p class="text-[10px] font-bold text-gray-400 uppercase">Totali</p>
-            <h3 id="stat-total" class="text-3xl font-black">0</h3>
+            <h3 id="stat-total" class="text-3xl font-black text-gray-800">0</h3>
         </div>
         <div class="stat-card !border-orange-500">
             <p class="text-[10px] font-bold text-gray-400 uppercase">Prelevati</p>
-            <h3 id="stat-out" class="text-3xl font-black">0</h3>
+            <h3 id="stat-out" class="text-3xl font-black text-orange-600">0</h3>
         </div>
         <div class="stat-card !border-green-500">
             <p class="text-[10px] font-bold text-gray-400 uppercase">In Archivio</p>
-            <h3 id="stat-in" class="text-3xl font-black">0</h3>
+            <h3 id="stat-in" class="text-3xl font-black text-green-600">0</h3>
         </div>
         <div class="stat-card !border-purple-500">
-            <p class="text-[10px] font-bold text-gray-400 uppercase">Gruppi</p>
-            <h3 id="stat-groups" class="text-3xl font-black">0</h3>
+            <p class="text-[10px] font-bold text-gray-400 uppercase">Gruppi Unici</p>
+            <h3 id="stat-groups" class="text-3xl font-black text-purple-600">0</h3>
         </div>
     </div>
 
     <div class="bg-white p-4 rounded-2xl mb-8 shadow-sm flex items-center gap-4">
         <span class="text-xl">🔍</span>
-        <input type="text" id="search" placeholder="Cerca qualsiasi dato..." onkeyup="filter()" class="w-full outline-none text-lg">
+        <input type="text" id="search" placeholder="Cerca per numero, gruppo o posizione..." onkeyup="filter()" class="w-full outline-none text-lg">
     </div>
 
     <div class="bg-white rounded-[30px] shadow-xl overflow-hidden">
@@ -88,24 +87,24 @@
 
 <div id="modal">
     <div class="bg-white p-8 rounded-[40px] w-full max-w-xl mx-4 shadow-2xl">
-        <h2 class="text-2xl font-black mb-6">Dettagli Fascicolo</h2>
+        <h2 class="text-2xl font-black mb-6">Gestione Fascicolo</h2>
         <div class="grid grid-cols-2 gap-4">
             <input type="text" id="m-num" placeholder="Numero" class="p-4 bg-gray-50 rounded-2xl outline-none ring-1 ring-gray-100">
             <input type="text" id="m-anno" placeholder="Anno" class="p-4 bg-gray-50 rounded-2xl outline-none ring-1 ring-gray-100">
             <input type="text" id="m-reg" placeholder="Registro" class="p-4 bg-gray-50 rounded-2xl outline-none ring-1 ring-gray-100">
             <input type="text" id="m-data" readonly class="p-4 bg-gray-100 rounded-2xl text-gray-400 border-none outline-none">
             
-            <input list="list-ripiani" id="m-ripiano" placeholder="Ripiano" class="p-4 bg-gray-50 rounded-2xl outline-none ring-1 ring-gray-100">
+            <input list="list-ripiani" id="m-ripiano" placeholder="Ripiano (es. Ripiano 4)" class="p-4 bg-gray-50 rounded-2xl outline-none ring-1 ring-gray-100">
             <datalist id="list-ripiani"></datalist>
 
-            <input list="list-gruppi" id="m-gruppo" placeholder="Gruppo" class="p-4 bg-gray-50 rounded-2xl outline-none ring-1 ring-gray-100">
+            <input list="list-gruppi" id="m-gruppo" placeholder="Gruppo (es. Gruppo 13)" class="p-4 bg-gray-50 rounded-2xl outline-none ring-1 ring-gray-100">
             <datalist id="list-gruppi"></datalist>
 
             <select id="m-stato" onchange="togglePrelevatore()" class="p-4 bg-gray-50 rounded-2xl outline-none ring-1 ring-gray-100">
                 <option value="In archivio">📦 In archivio</option>
                 <option value="Prelevato">🏃 Prelevato</option>
             </select>
-            <input type="text" id="m-prelevatore" placeholder="Nome prelevatore" class="p-4 bg-orange-50 rounded-2xl outline-none ring-1 ring-orange-200 hidden">
+            <input type="text" id="m-prelevatore" placeholder="Nome di chi preleva" class="p-4 bg-orange-50 rounded-2xl outline-none ring-1 ring-orange-200 hidden">
         </div>
         <div class="flex justify-end gap-4 mt-10">
             <button onclick="closeModal()" class="font-bold text-gray-400">Annulla</button>
@@ -168,14 +167,19 @@
         document.getElementById('stat-out').innerText = fullData.filter(x => x.stato === 'Prelevato').length;
         document.getElementById('stat-in').innerText = fullData.filter(x => x.stato !== 'Prelevato').length;
         
-        // Fix conteggio gruppi: ignora i campi vuoti e i "-"
-        const gruppiUnici = [...new Set(fullData.map(x => x.gruppo ? x.gruppo.trim() : "").filter(g => g !== "" && g !== "-"))];
-        document.getElementById('stat-groups').innerText = gruppiUnici.length;
+        // Nuova logica precisa per il conteggio Gruppi
+        const gruppiList = fullData.map(x => {
+            let g = x.gruppo ? x.gruppo.toString().trim() : "";
+            return g.toLowerCase() === "0" || g === "-" ? "" : g;
+        }).filter(g => g !== "");
+        
+        const conteggioReale = [...new Set(gruppiList)].length;
+        document.getElementById('stat-groups').innerText = conteggioReale;
     }
 
     function updateDatalists() {
-        const ripiani = [...new Set(fullData.map(x => x.ripiano).filter(Boolean))];
-        const gruppi = [...new Set(fullData.map(x => x.gruppo).filter(Boolean))];
+        const ripiani = [...new Set(fullData.map(x => x.ripiano).filter(r => r && r !== "0" && r !== "-"))];
+        const gruppi = [...new Set(fullData.map(x => x.gruppo).filter(g => g && g !== "0" && g !== "-"))];
         document.getElementById('list-ripiani').innerHTML = ripiani.map(r => `<option value="${r}">`).join('');
         document.getElementById('list-gruppi').innerHTML = gruppi.map(g => `<option value="${g}">`).join('');
     }
@@ -205,6 +209,7 @@
     }
 
     function closeModal() { document.getElementById('modal').classList.remove('active'); }
+    
     function togglePrelevatore() {
         const isOut = document.getElementById('m-stato').value === 'Prelevato';
         document.getElementById('m-prelevatore').classList.toggle('hidden', !isOut);
@@ -225,14 +230,6 @@
         if (editingKey) db.child(editingKey).update(payload);
         else db.push(payload);
         closeModal();
-    }
-
-    function clearDatabase() {
-        if (confirm("⚠️ ATTENZIONE: Questa azione cancellerà TUTTI i dati nel cloud. Vuoi procedere?")) {
-            if (confirm("Sei assolutamente sicuro? Non potrai tornare indietro.")) {
-                db.remove().then(() => alert("Database svuotato."));
-            }
-        }
     }
 
     function importXLS(e) {
@@ -275,10 +272,13 @@
         XLSX.writeFile(wb, "archivio_pro.xlsx");
     }
 
-    function del(k) { if(confirm("Eliminare?")) db.child(k).remove(); }
+    function del(k) { if(confirm("Eliminare definitivamente questo fascicolo?")) db.child(k).remove(); }
+    
     function filter() {
         let v = document.getElementById('search').value.toLowerCase();
-        document.querySelectorAll('#table-body tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none');
+        document.querySelectorAll('#table-body tr').forEach(r => {
+            r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none';
+        });
     }
 </script>
 </body>
