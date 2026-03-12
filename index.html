@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -207,4 +208,29 @@
         closeModal();
     }
 
-    function del(key
+    function del(key) { if (confirm("Eliminare dal Cloud?")) db.child(key).remove(); }
+    
+    function filter() {
+        let v = document.getElementById('search').value.toLowerCase();
+        let rows = document.querySelectorAll('#table-body tr');
+        rows.forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none');
+    }
+
+    function exportExcel() {
+        // Rimuove fbKey prima dell'esportazione
+        const clean = fullData.map(({fbKey, ...rest}) => rest);
+        const ws = XLSX.utils.json_to_sheet(clean);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "ArchivioCloud");
+        XLSX.writeFile(wb, "archivio_sentenze_cloud.xlsx");
+    }
+
+    function doPrint(g) {
+        document.getElementById('p-label').innerText = g;
+        document.getElementById('p-qr').innerHTML = "";
+        new QRCode(document.getElementById("p-qr"), { text: g, width: 250, height: 250 });
+        setTimeout(() => window.print(), 500);
+    }
+</script>
+</body>
+</html>
