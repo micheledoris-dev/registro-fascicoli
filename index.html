@@ -3,85 +3,358 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archivio Fascicoli v7.2</title>
+    <title>Archivio Pro v7 - Gestione Logistica</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.1/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        body { background-color: #F3F4F6; font-family: ui-sans-serif, system-ui; }
-        .stat-card { background: white; border-radius: 12px; padding: 15px; shadow: sm; border-top: 4px solid #3B82F6; }
-        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+        body { background-color: #F8F9FA; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .stat-card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-left: 5px solid #3B82F6; }
+        .btn-shadow { box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3); }
+        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 50; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
         #modal.active { display: flex; }
+        #reader { width: 100%; max-width: 400px; margin: auto; display: none; }
+        @media print { .no-print { display: none !important; } #print-area { display: block !important; } }
     </style>
 </head>
-<body class="p-4">
+<body class="p-4 md:p-6 lg:p-10">
 
-<div class="max-w-7xl mx-auto">
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+<div class="max-w-7xl mx-auto no-print">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">📁 Archivio Fascicoli Pro</h1>
+            <p class="text-gray-500 mt-1">Gestione avanzata, prelievi e scanner QR</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <button onclick="startScanner()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-indigo-700 transition">📸 SCANNER QR</button>
+            <button onclick="document.getElementById('file-in').click()" class="bg-white border border-gray-200 px-5 py-2.5 rounded-xl font-semibold hover:bg-gray-50 transition">Importa</button>
+            <button onclick="exportExcel()" class="bg-white border border-gray-200 px-5 py-2.5 rounded-xl font-semibold hover:bg-gray-50 transition">Esporta</button>
+            <button onclick="openModal()" class="bg-blue-600 text-white px-8 py-2.5 rounded-xl font-bold btn-shadow hover:bg-blue-700 transition">＋ NUOVO</button>
+        </div>
+    </header>
+
+    <div id="reader-container" class="mb-8 hidden">
+        <div class="bg-black p-4 rounded-3xl relative">
+            <button onclick="stopScanner()" class="absolute top-4 right-4 text-white font-bold text-xl z-10">✕</button>
+            <div id="reader"></div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <div class="stat-card">
-            <p class="text-xs font-bold text-gray-400 uppercase">Totali</p>
-            <h3 id="stat-total" class="text-2xl font-black">0</h3>
+            <p class="text-xs font-bold text-gray-400 uppercase">Fascicoli Totali</p>
+            <h3 id="stat-total" class="text-3xl font-black text-gray-800">0</h3>
         </div>
-        <div class="stat-card !border-orange-500">
+        <div class="stat-card !border-orange-400">
             <p class="text-xs font-bold text-gray-400 uppercase">Prelevati</p>
-            <h3 id="stat-out" class="text-2xl font-black">0</h3>
+            <h3 id="stat-out" class="text-3xl font-black text-gray-800">0</h3>
         </div>
-        <div class="stat-card !border-green-500">
-            <p class="text-xs font-bold text-gray-400 uppercase">In Sede</p>
-            <h3 id="stat-in" class="text-2xl font-black">0</h3>
+        <div class="stat-card !border-green-400">
+            <p class="text-xs font-bold text-gray-400 uppercase">In Archivio</p>
+            <h3 id="stat-in" class="text-3xl font-black text-gray-800">0</h3>
         </div>
-        <div class="stat-card !border-purple-500">
-            <p class="text-xs font-bold text-gray-400 uppercase">Gruppi</p>
-            <h3 id="stat-groups" class="text-2xl font-black">0</h3>
+        <div class="stat-card !border-purple-400">
+            <p class="text-xs font-bold text-gray-400 uppercase">Gruppi Unici</p>
+            <h3 id="stat-groups" class="text-3xl font-black text-gray-800">0</h3>
         </div>
     </div>
 
-    <div class="flex flex-wrap gap-2 mb-6">
-        <button onclick="openModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold shadow-md">＋ NUOVO</button>
-        <button onclick="document.getElementById('file-in').click()" class="bg-white border px-4 py-2 rounded-lg text-sm font-medium">Importa Excel</button>
-        <button onclick="exportExcel()" class="bg-white border px-4 py-2 rounded-lg text-sm font-medium">Esporta</button>
-        <input type="text" id="search" placeholder="Cerca..." onkeyup="filter()" class="flex-1 p-2 border rounded-lg outline-none">
+    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-8">
+        <div class="flex items-center gap-4">
+            <span class="text-xl">🔍</span>
+            <input type="text" id="search" placeholder="Cerca numero, anno, ripiano o chi ha prelevato..." onkeyup="filter()" class="w-full bg-transparent outline-none text-lg placeholder-gray-300">
+        </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
-                <thead class="bg-gray-100 text-gray-600 font-bold uppercase text-[10px]">
-                    <tr>
-                        <th class="p-4">Fascicolo</th>
-                        <th class="p-4">Posizione (R/G)</th>
-                        <th class="p-4">Stato</th>
-                        <th class="p-4">Prelevatore</th>
-                        <th class="p-4">Data</th>
-                        <th class="p-4 text-right">Azioni</th>
+                <thead class="bg-gray-50 border-b border-gray-100">
+                    <tr class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        <th class="p-5">Fascicolo / Anno</th>
+                        <th class="p-5">Registro</th>
+                        <th class="p-5">Posizione</th>
+                        <th class="p-5">Stato</th>
+                        <th class="p-5">Prelevato da</th>
+                        <th class="p-5">Data Aggiornamento</th>
+                        <th class="p-5 text-right">Azioni</th>
                     </tr>
                 </thead>
-                <tbody id="table-body" class="divide-y divide-gray-100 font-medium">
-                    </tbody>
+                <tbody id="table-body" class="divide-y divide-gray-50">
+                    <tr><td colspan="7" class="p-20 text-center text-gray-400 animate-pulse font-medium italic">Sincronizzazione database...</td></tr>
+                </tbody>
             </table>
         </div>
     </div>
 </div>
 
 <div id="modal">
-    <div class="bg-white p-6 rounded-2xl w-full max-w-md mx-4">
-        <h2 class="text-xl font-bold mb-4">Dettagli Fascicolo</h2>
-        <div class="grid grid-cols-2 gap-3">
-            <input type="text" id="m-num" placeholder="Numero" class="p-2 border rounded-lg">
-            <input type="text" id="m-anno" placeholder="Anno" class="p-2 border rounded-lg">
-            <input type="text" id="m-reg" placeholder="Registro" class="p-2 border rounded-lg">
-            <input type="text" id="m-data" readonly class="p-2 bg-gray-50 border rounded-lg text-gray-400">
-            <input type="text" id="m-ripiano" placeholder="Ripiano" class="p-2 border rounded-lg">
-            <input type="text" id="m-gruppo" placeholder="Gruppo" class="p-2 border rounded-lg">
-            <select id="m-stato" class="p-2 border rounded-lg col-span-2">
-                <option value="In archivio">In archivio</option>
-                <option value="Prelevato">Prelevato</option>
-            </select>
-            <input type="text" id="m-prelevatore" placeholder="Nome chi preleva" class="p-2 border rounded-lg col-span-2">
+    <div class="bg-white p-8 rounded-[32px] w-full max-w-2xl mx-4 shadow-2xl relative">
+        <h2 id="modal-title" class="text-2xl font-bold mb-8 text-gray-800">Dettagli Fascicolo</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Numero Fascicolo</label>
+                <input type="text" id="m-num" placeholder="Es: 586" class="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-100 focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Anno</label>
+                <input type="text" id="m-anno" placeholder="Es: 2024" class="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-100 focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Registro</label>
+                <input type="text" id="m-reg" placeholder="Es: RG" class="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-100 outline-none">
+            </div>
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Data (Auto)</label>
+                <input type="text" id="m-data" readonly class="w-full p-4 bg-gray-100 rounded-2xl border-none text-gray-400 cursor-not-allowed">
+            </div>
+            
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Ripiano</label>
+                <input list="list-ripiani" id="m-ripiano" placeholder="Seleziona o scrivi..." class="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-100 outline-none">
+                <datalist id="list-ripiani"></datalist>
+            </div>
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Gruppo</label>
+                <input list="list-gruppi" id="m-gruppo" placeholder="Seleziona o scrivi..." class="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-100 outline-none">
+                <datalist id="list-gruppi"></datalist>
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Stato attuale</label>
+                <select id="m-stato" onchange="togglePrelevatore()" class="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-100 outline-none">
+                    <option value="In archivio">📦 In archivio</option>
+                    <option value="Prelevato">🏃 Prelevato</option>
+                </select>
+            </div>
+            <div id="div-prelevatore" class="space-y-1 hidden">
+                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Nome di chi preleva</label>
+                <input type="text" id="m-prelevatore" placeholder="Inserisci nome..." class="w-full p-4 bg-orange-50 rounded-2xl border-none ring-1 ring-orange-200 outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
         </div>
-        <div class="flex justify-end gap-2 mt-6">
-            <button onclick="closeModal()" class="
+
+        <div class="flex justify-end gap-4 mt-10">
+            <button onclick="closeModal()" class="px-6 py-3 font-bold text-gray-400 hover:text-gray-600">Annulla</button>
+            <button onclick="save()" class="bg-blue-600 text-white px-10 py-3 rounded-2xl font-bold shadow-lg hover:bg-blue-700 transition">SALVA FASCICOLO</button>
+        </div>
+    </div>
+</div>
+
+<div id="print-area" class="hidden">
+    <div style="border: 2px solid black; padding: 20px; display: inline-block; text-align: center; border-radius: 10px;">
+        <h2 id="p-label" style="font-size: 24px; font-weight: bold; margin-bottom: 15px;"></h2>
+        <div id="p-qr" style="display: flex; justify-content: center;"></div>
+        <p style="margin-top: 10px; font-size: 14px; color: #666;">Archivio Digitale - Etichetta Posizione</p>
+    </div>
+</div>
+
+<input type="file" id="file-in" class="hidden" onchange="importXLS(event)">
+
+<script>
+    // Configurazione Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyC4PA_joHtGFRudPUYBOQAMrOgVearBt3I",
+      authDomain: "archivio-sentenze.firebaseapp.com",
+      databaseURL: "https://archivio-sentenze-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "archivio-sentenze",
+      storageBucket: "archivio-sentenze.firebasestorage.app",
+      messagingSenderId: "139447095387",
+      appId: "1:139447095387:web:32d031468fa4c74a83af7e"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database().ref('sentenze');
+    let fullData = [];
+    let editingKey = null;
+    let html5QrCode;
+
+    // Sincronizzazione Realtime
+    db.on('value', (snap) => {
+        const val = snap.val();
+        // Ordinamento per data (più recenti in alto)
+        fullData = val ? Object.keys(val).map(k => ({...val[k], fbKey: k})) : [];
+        fullData.sort((a, b) => new Date(b.dataRaw || 0) - new Date(a.dataRaw || 0));
+        updateStats();
+        updateDatalists();
+        renderTable();
+    });
+
+    function renderTable() {
+        const body = document.getElementById('table-body');
+        if (fullData.length === 0) {
+            body.innerHTML = '<tr><td colspan="7" class="p-20 text-center text-gray-300 italic">Nessun fascicolo trovato.</td></tr>';
+            return;
+        }
+        body.innerHTML = fullData.map(i => `
+            <tr class="hover:bg-blue-50/20 transition group">
+                <td class="p-5">
+                    <div class="font-black text-blue-600 text-base">${i.num || '-'}</div>
+                    <div class="text-[10px] text-gray-400 font-bold uppercase">${i.anno || '-'}</div>
+                </td>
+                <td class="p-5 text-gray-600 font-medium">${i.reg || '-'}</td>
+                <td class="p-5">
+                    <div class="font-bold text-gray-800">${i.ripiano || '-'}</div>
+                    <div class="text-xs text-gray-400">${i.gruppo || '-'}</div>
+                </td>
+                <td class="p-5">
+                    <span class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${i.stato === 'Prelevato' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}">
+                        ${i.stato || 'In archivio'}
+                    </span>
+                </td>
+                <td class="p-5 font-bold text-gray-700">${i.prelevatore || '-'}</td>
+                <td class="p-5 text-gray-400 text-xs">${i.data || '-'}</td>
+                <td class="p-5 text-right space-x-1">
+                    <button onclick="doPrint('${i.ripiano} ${i.gruppo}')" class="bg-gray-100 p-2 rounded-lg hover:bg-black hover:text-white transition">🖨️</button>
+                    <button onclick="openModal('${i.fbKey}')" class="p-2 text-gray-300 hover:text-blue-600 transition">✏️</button>
+                    <button onclick="del('${i.fbKey}')" class="p-2 text-gray-300 hover:text-red-600 transition">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Gestione Statistiche
+    function updateStats() {
+        document.getElementById('stat-total').innerText = fullData.length;
+        document.getElementById('stat-out').innerText = fullData.filter(x => x.stato === 'Prelevato').length;
+        document.getElementById('stat-in').innerText = fullData.filter(x => x.stato !== 'Prelevato').length;
+        document.getElementById('stat-groups').innerText = [...new Set(fullData.map(x => x.gruppo))].length;
+    }
+
+    // Aggiornamento tendine dinamiche
+    function updateDatalists() {
+        const ripiani = [...new Set(fullData.map(x => x.ripiano).filter(Boolean))];
+        const gruppi = [...new Set(fullData.map(x => x.gruppo).filter(Boolean))];
+        document.getElementById('list-ripiani').innerHTML = ripiani.map(r => `<option value="${r}">`).join('');
+        document.getElementById('list-gruppi').innerHTML = gruppi.map(g => `<option value="${g}">`).join('');
+    }
+
+    function togglePrelevatore() {
+        const isPrelevato = document.getElementById('m-stato').value === 'Prelevato';
+        document.getElementById('div-prelevatore').classList.toggle('hidden', !isPrelevato);
+    }
+
+    function openModal(key = null) {
+        editingKey = key;
+        const now = new Date();
+        const dataStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        if (key) {
+            const i = fullData.find(x => x.fbKey === key);
+            document.getElementById('m-num').value = i.num || "";
+            document.getElementById('m-anno').value = i.anno || "";
+            document.getElementById('m-reg').value = i.reg || "";
+            document.getElementById('m-ripiano').value = i.ripiano || "";
+            document.getElementById('m-gruppo').value = i.gruppo || "";
+            document.getElementById('m-stato').value = i.stato || "In archivio";
+            document.getElementById('m-prelevatore').value = i.prelevatore || "";
+            document.getElementById('m-data').value = i.data || dataStr;
+        } else {
+            document.querySelectorAll('#modal input:not([readonly])').forEach(i => i.value = "");
+            document.getElementById('m-stato').value = "In archivio";
+            document.getElementById('m-data').value = dataStr;
+        }
+        togglePrelevatore();
+        document.getElementById('modal').classList.add('active');
+    }
+
+    function closeModal() { document.getElementById('modal').classList.remove('active'); }
+
+    function save() {
+        const payload = {
+            num: document.getElementById('m-num').value,
+            anno: document.getElementById('m-anno').value,
+            reg: document.getElementById('m-reg').value,
+            ripiano: document.getElementById('m-ripiano').value,
+            gruppo: document.getElementById('m-gruppo').value,
+            stato: document.getElementById('m-stato').value,
+            prelevatore: document.getElementById('m-prelevatore').value,
+            data: document.getElementById('m-data').value,
+            dataRaw: new Date().toISOString() // Per ordinamento
+        };
+        if (!payload.num) return alert("Inserire almeno il numero!");
+        
+        if (editingKey) db.child(editingKey).update(payload);
+        else db.push(payload);
+        closeModal();
+    }
+
+    // Scanner QR
+    function startScanner() {
+        document.getElementById('reader-container').classList.remove('hidden');
+        document.getElementById('reader').style.display = 'block';
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
+            (decodedText) => {
+                document.getElementById('search').value = decodedText;
+                filter();
+                stopScanner();
+                // Se trova un solo risultato, apri subito la modifica
+                setTimeout(() => {
+                    const visibleRows = document.querySelectorAll('#table-body tr:not([style*="none"])');
+                    if(visibleRows.length === 1) {
+                        const key = fullData.find(x => (x.ripiano + " " + x.gruppo) === decodedText)?.fbKey;
+                        if(key) openModal(key);
+                    }
+                }, 500);
+            }
+        ).catch(err => alert("Errore fotocamera: " + err));
+    }
+
+    function stopScanner() {
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => {
+                document.getElementById('reader-container').classList.add('hidden');
+            });
+        }
+    }
+
+    function importXLS(e) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
+            const dataRows = rows.slice(1);
+            if (confirm("Importare " + dataRows.length + " righe?")) {
+                dataRows.forEach(r => {
+                    if(r[0]) db.push({
+                        num: r[0] || "", anno: r[1] || "", reg: r[2] || "-", 
+                        ripiano: r[3] || "-", gruppo: r[4] || "-", 
+                        stato: r[5] || "In archivio", data: r[6] || new Date().toLocaleDateString(),
+                        dataRaw: new Date().toISOString()
+                    });
+                });
+            }
+        };
+        reader.readAsArrayBuffer(e.target.files[0]);
+    }
+
+    function exportExcel() {
+        const ws = XLSX.utils.json_to_sheet(fullData.map(({fbKey, dataRaw, ...r}) => r));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Archivio_Completo");
+        XLSX.writeFile(wb, "archivio_logistico_" + new Date().toLocaleDateString() + ".xlsx");
+    }
+
+    function del(k) { if(confirm("Eliminare definitivamente dal Cloud?")) db.child(k).remove(); }
+    
+    function filter() {
+        let v = document.getElementById('search').value.toLowerCase();
+        let trs = document.querySelectorAll('#table-body tr');
+        trs.forEach(t => t.style.display = t.innerText.toLowerCase().includes(v) ? '' : 'none');
+    }
+
+    function doPrint(t) {
+        document.getElementById('p-label').innerText = t;
+        document.getElementById('p-qr').innerHTML = "";
+        new QRCode(document.getElementById("p-qr"), { text: t, width: 200, height: 200 });
+        setTimeout(() => window.print(), 300);
+    }
+</script>
+</body>
+</html>
